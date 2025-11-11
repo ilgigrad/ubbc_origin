@@ -1,0 +1,40 @@
+
+User-agent: *
+Disallow: /if-white-erbfyzd
+User-agent: Bingbot
+User-agent: Googlebot
+User-agent: Slurp
+Disallow:
+Sitemap: http://www.ultraclimb.com/if-white-erbfyzd/sitemap.xml
+
+User-agent: *
+Disallow: /e68llj
+User-agent: Bingbot
+User-agent: Googlebot
+User-agent: Slurp
+Disallow:
+Sitemap: http://www.ultraclimb.com/e68llj/sitemap.xml
+
+User-agent: *
+Disallow: /88utyi
+User-agent: Bingbot
+User-agent: Googlebot
+User-agent: Slurp
+Disallow:
+Sitemap: http://www.ultraclimb.com/88utyi/sitemap.xml
+
+User-agent: *
+Disallow: /hj-meaning-ruj
+User-agent: Bingbot
+User-agent: Googlebot
+User-agent: Slurp
+Disallow:
+Sitemap: http://www.ultraclimb.com/hj-meaning-ruj/sitemap.xml
+
+User-agent: *
+Disallow: /vzdvz3
+User-agent: Bingbot
+User-agent: Googlebot
+User-agent: Slurp
+Disallow:
+Sitemap: http://www.ultraclimb.com/vzdvz3/sitemap.xml

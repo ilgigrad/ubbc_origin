@@ -1,0 +1,47 @@
+version: '3'
+
+vars:
+  VHOST_PATH: ./web
+
+tasks:
+  start:
+    desc: Build les conteneurs web et db
+    cmds:
+      - docker compose up --build -d web db
+
+  stop:
+    desc: Arrête et supprime les conteneurs + volumes
+    cmds:
+      - docker compose down -v
+      - rm -rf ./db_data
+      - docker builder prune -f
+
+  switch-http:
+    desc: Bascule vers la version HTTP-only
+    cmds:
+      - cp {{.VHOST_PATH}}/vhost-httponly.conf {{.VHOST_PATH}}/default.conf
+
+  switch-https:
+    desc: Bascule vers la version HTTPS
+    cmds:
+      - cp {{.VHOST_PATH}}/vhost.conf {{.VHOST_PATH}}/default.conf
+
+  certbot:
+    cmds:
+      - task: switch-http
+      - task: restart
+      - sleep 5
+      - docker compose run --rm certbot
+      - task: switch-https
+      - task: restart
+
+  restart:
+    cmds:
+      - docker compose restart web
+
+  rebuild-all:
+    desc: Rebuild complet avec certbot
+    cmds:
+      - task: stop
+      - task: start
+      - task: certbot

@@ -1,0 +1,55 @@
+services:
+  web:
+    container_name: ubbc-web
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./app:/var/www/html
+      - ./web/default.conf:/etc/apache2/sites-available/000-default.conf
+      - ./certs:/etc/letsencrypt:ro
+    depends_on:
+      - db
+    networks:
+      - ubbcnet
+
+  db:
+    image: mysql:5.6
+    platform: linux/amd64
+    container_name: ubbc-mysql
+    restart: always
+    environment:
+      MYSQL_DATABASE: db15800_ubbc
+      MYSQL_USER: db97064
+      MYSQL_PASSWORD: Unfl@t&W1ld
+      MYSQL_ROOT_PASSWORD: root&Unfl@t
+      command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./db_data:/var/lib/mysql
+      - ./db_dump:/docker-entrypoint-initdb.d
+    ports:
+      - "23306:3306"
+    networks:
+      - ubbcnet
+
+  certbot:
+    image: certbot/certbot
+    container_name: ubbc-certbot
+    volumes:
+      - ./certs:/etc/letsencrypt
+      - ./app:/var/www/html
+    command: certonly --webroot --webroot-path=/var/www/html --email david@ubbc.fr --agree-tos --no-eff-email -d ubbc.fr -d www.ubbc.fr
+    depends_on:
+      - web
+    networks:
+      - ubbcnet
+
+networks:
+  ubbcnet:
+    driver: bridge
+
+volumes:
+  certs:

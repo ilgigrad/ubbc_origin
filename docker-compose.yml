@@ -12,7 +12,6 @@ services:
       - ./app/vendor:/var/www/html/vendor
       - ./web/000-default.conf:/etc/apache2/sites-available/000-default.conf
       - ./certs:/etc/letsencrypt:ro
-      #- /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:
       - db
     networks:

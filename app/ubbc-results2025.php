@@ -8,23 +8,26 @@ elseif (isset($_GET['init']) && $_GET['init']==1){
     init_live();
 }
 
+// Valeurs par défaut
+$nbpage = (int)($_GET['nbpage'] ?? 1);
+if ($nbpage < 1) $nbpage = 1;
+
+// $races doit être un tableau
+$races = $races ?? [];
+if (!is_array($races)) $races = [];
+
 
 
 $link = connect();
 
 
-if (isset($_GET['page']) && $_GET['page']>0 && $_GET['page']<=$nbpage){
-        $cpage=$_GET['page'];
-}
-else {
-    $cpage=1;
-}
 
-if (isset($_GET['order']) && in_array($_GET['order'],array('bib','lastname','gender','category','srank','rrank','crank','faster','duration','laps','chrono','average','raceid'))){
+
+if (isset($_GET['order']) && in_array($_GET['order'],array('bib','lastname','gender','category','srank','rrank','crank','faster','duration','laps','chrono','average','race'))){
     $order=$_GET['order'];
 }
 else {
-    $order='raceid desc, rrank';
+    $order='race desc, rrank';
 }
 
 if (isset($_GET['page']) && isset($_GET['asc']) && in_array($_GET['asc'],array('asc','desc'))){
@@ -37,14 +40,12 @@ else {
     $asc='asc';
 }
 
-if (isset($_GET['race']) && array_key_exists($_GET['race'],$races)){
-    $race=$_GET['race'];
-    $raceFilter="WHERE race = $race ";
-    //$raceFilter="WHERE race ='".$races[$race]."' ";
-}
-else {
-    $race=0;
-    $raceFilter='';
+$race = isset($_GET['race']) ? (int)$_GET['race'] : 0;
+
+if ($race > 0) {
+    $raceFilter = "WHERE race = $race ";
+} else {
+    $raceFilter = '';
 }
 if ($order=="grank"){
   $order='gender asc, grank';

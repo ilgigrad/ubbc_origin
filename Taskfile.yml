@@ -54,3 +54,11 @@ tasks:
     dir: ./app
     cmds:
       - composer install
+
+  load-db:
+    desc: Recharge la base MySQL depuis db_dump (DESTRUCTIF)
+    cmds:
+      - docker compose down
+      - rm -rf ./db_data/*
+      - docker compose up -d db
+      - docker logs -f ubbc-mysql

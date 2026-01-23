@@ -13,27 +13,27 @@ tasks:
     desc: Arrête et supprime les conteneurs + volumes
     cmds:
       - docker compose down -v
-      - rm -rf ./db_data
+      - sudo rm -rf ./db_data
       - docker builder prune -f
 
   switch-http:
     desc: Bascule vers la version HTTP-only
     cmds:
-      - cp {{.VHOST_PATH}}/vhost-httponly.conf {{.VHOST_PATH}}/default.conf
+      - cp {{.VHOST_PATH}}/vhost-httponly.conf {{.VHOST_PATH}}/000-default.conf
 
   switch-https:
     desc: Bascule vers la version HTTPS
     cmds:
-      - cp {{.VHOST_PATH}}/vhost.conf {{.VHOST_PATH}}/default.conf
+      - cp {{.VHOST_PATH}}/vhost.conf {{.VHOST_PATH}}/000-default.conf
 
   certbot:
     cmds:
-      - task: switch-http
-      - task: restart
+      # task: switch-http
+      # task: restart
       - sleep 5
       - docker compose run --rm certbot
-      - task: switch-https
-      - task: restart
+      # task: switch-https
+      # task: restart
 
   restart:
     cmds:
@@ -44,4 +44,13 @@ tasks:
     cmds:
       - task: stop
       - task: start
+      - task: switch-http
+      - task: restart
       - task: certbot
+      - task: switch-https
+      - task: restart
+
+  composer-install:
+    dir: ./app
+    cmds:
+      - composer install

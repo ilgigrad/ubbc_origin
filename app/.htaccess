@@ -5,6 +5,7 @@ RewriteCond %{REQUEST_URI} ^/\.well-known/acme-challenge/
 RewriteRule ^ - [L]
 
 # Rediriger vers HTTPS si l'en-tête indique que la requête était HTTP
+RewriteCond %{ENV:REDIRECT_HTTPS} =on
 RewriteCond %{HTTPS} off
 RewriteRule ^ https://ubbc.fr%{REQUEST_URI} [L,R=301]
 

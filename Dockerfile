@@ -13,7 +13,8 @@ RUN apt-get update && \
 
 
 RUN a2enmod rewrite ssl
-
+RUN a2enmod proxy
+RUN a2enmod proxy_http
 
 
 COPY ./web/ports.conf /etc/apache2/ports.conf

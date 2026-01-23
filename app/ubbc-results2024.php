@@ -103,7 +103,7 @@ else {
             $sqlquery = <<< EOT
 SELECT
 l.bib,l.lastname,l.firstname,l.gender,l.category,
-l.best_lap as faster,l.race_duration as chrono ,l.laps,
+l.faster as faster,l.race_duration as chrono ,l.laps,
 l.run_duration as duration,
 l.race,
 l.rrank,

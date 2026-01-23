@@ -94,8 +94,6 @@ else {
                 <th class="thin"><a href='ubbc-results2024.php?race=<?php echo $race ?>&order=crank&asc=<?php echo $asc ?>'>Rang Genre</a></th>
                 <th class="thin"><a href='ubbc-results2024.php?race=<?php echo $race ?>&order=laps&asc=<?php echo $asc ?>'>Tours</a></th>
                 <th class="medium"><a href='ubbc-results2024.php?race=<?php echo $race ?>&order=duration&asc=<?php echo $asc ?>'>Durée</a></th>
-                <th class="medium"><a href='ubbc-results2024.php?race=<?php echo $race ?>&order=average&asc=<?php echo $asc ?>'>Moyene</a></th>
-                <th class="thin"><a href='ubbc-results2024.php?race=<?php echo $race ?>&order=srank&asc=<?php echo $asc ?>'>UBBC index</a></th>
 
             </tr>
             </thead>
@@ -106,12 +104,11 @@ else {
 SELECT
 l.bib,l.lastname,l.firstname,l.gender,l.category,
 l.best_lap as faster,l.race_duration as chrono ,l.laps,
-l.average_lap as average,l.run_duration as duration,
+l.run_duration as duration,
 l.race,
 l.rrank,
 l.crank,
-l.srank,
-l.ubbc_index
+l.srank
 FROM results_2024 l
 EOT;
 
@@ -142,8 +139,7 @@ EOT;
                 printf('<td class="thin text-uppercase">%s</td>',$record["crank"]);
                 printf('<td class="thin ">%s</td>',$record["laps"]);
                 printf('<td class="medium">%s</td>',$record["duration"]);
-                printf('<td class="medium">%s</td>',$record["average"]);
-                printf('<td class="thin">%s</td>',$record["ubbc_index"]);
+
                 printf('</tr>');
             } //fin de la boucle, le tableau contient toute la BDD
 

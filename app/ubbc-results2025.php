@@ -139,7 +139,7 @@ echo '            <tbody>';
                 printf('<td class="thin text-uppercase">%s</td>',$record["gender"]);
                 printf('<td class="thin text-uppercase">%s</td>',$record["category"]);
                 printf('<td class="thin text-uppercase">%s</td>',$record["crank"]);
-                printf('<td class="thin %s">%s</td>',$record["laps"]);
+                printf('<td class="thin ">%s</td>',$record["laps"]);
                 printf('<td class="medium">%s</td>',$record["duration"]);
                 printf('<td class="medium">%s</td>',$record["average"]);
                 printf('<td class="thin">%s</td>',$record["ubbc_index"]);

@@ -23,7 +23,7 @@ $link = connect();
 
 
 
-if (isset($_GET['order']) && in_array($_GET['order'],array('bib','lastname','gender','category','srank','rrank','crank','faster','duration','laps','chrono','average','race'))){
+if (isset($_GET['order']) && in_array($_GET['order'],array('bib','lastname','gender','category','srank','rrank','crank','faster','laps','chrono','race'))){
     $order=$_GET['order'];
 }
 else {
@@ -93,7 +93,6 @@ else {
                 <th class="thin"><a href='ubbc-results2024.php?race=<?php echo $race ?>&order=category&asc=<?php echo $asc ?>'>Cat&eacute;gorie</a></th>
                 <th class="thin"><a href='ubbc-results2024.php?race=<?php echo $race ?>&order=crank&asc=<?php echo $asc ?>'>Rang Genre</a></th>
                 <th class="thin"><a href='ubbc-results2024.php?race=<?php echo $race ?>&order=laps&asc=<?php echo $asc ?>'>Tours</a></th>
-                <th class="medium"><a href='ubbc-results2024.php?race=<?php echo $race ?>&order=duration&asc=<?php echo $asc ?>'>Durée</a></th>
 
             </tr>
             </thead>
@@ -103,8 +102,7 @@ else {
             $sqlquery = <<< EOT
 SELECT
 l.bib,l.lastname,l.firstname,l.gender,l.category,
-l.faster as faster,l.race_duration as chrono ,l.laps,
-l.run_duration as duration,
+l.faster as faster,l.duration as chrono ,l.laps,
 l.race,
 l.rrank,
 l.crank,
@@ -138,7 +136,6 @@ EOT;
                 printf('<td class="thin text-uppercase">%s</td>',$record["category"]);
                 printf('<td class="thin text-uppercase">%s</td>',$record["crank"]);
                 printf('<td class="thin ">%s</td>',$record["laps"]);
-                printf('<td class="medium">%s</td>',$record["duration"]);
 
                 printf('</tr>');
             } //fin de la boucle, le tableau contient toute la BDD

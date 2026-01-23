@@ -127,28 +127,7 @@ echo '            <tbody>';
 
             while($record = mysqli_fetch_array($results,MYSQLI_ASSOC))
             {
-                if ($record["ai"]==1){
-                  $aiico="<i class='ml-1' style='background-image:url(\"http://ubbc.fr/static/images/ico-synapse.png\");background-size: contain;background-repeat: no-repeat;width:15px;height:15px;display:inline-block;'></i>";
-                }
-                else {
-                  $aiico="";
-                }
 
-                if ($record["laps"]>=$record["goal"]){
-                  $expected="finisher";
-                  $expcolor="fl-txt-electric";
-                }
-                elseif ($record["expected"]=='23:59:59' || $record["control"]=='STOP'){
-                    $expected="stopped";
-                    $expcolor="fl-txt-peach";
-                  }
-                else {
-                  $expected=$record["expected"].$aiico;
-                  $expcolor="";
-                  if ($record["expected"][0]=='-') {
-                    $expcolor="fl-txt-peach";
-                  }
-                }
                 printf('<tr>');
                 printf('<td class="medium text-capitalize">%s</td>',$record["race"]);
                 printf('<td class="thin text-uppercase">%s</td>',$record["rrank"]);

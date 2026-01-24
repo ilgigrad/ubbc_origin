@@ -10,7 +10,7 @@ $_POST
 ?>
 <section class="container-fluid">
     <h1 class="text-center text-uppercase pt-2 fl-txt-prune">écrire votre plaidoyer</h1>
-    <form class="px-2 col-md-4 mx-auto my-5" method="post" action="<?= $base_url ?>ubbc-contactsend.php">
+    <form class="px-2 col-md-4 mx-auto my-5" method="post" action="ubbc-contactsend.php">
         <div class="form-group">
           <label for="email">Saisissez votre adresse email.</label>
           <input class="form-control" id="email" type="email" name="email"size="50" required placeholder="Jeff@amazon.com" value="<?php echo $_POST['email']; ?>">
@@ -31,7 +31,7 @@ $_POST
         </div>
         <div class="form-group">
           <label for="message">contenu du message</label>
-          <textarea id="message" minlength="500" maxlength="1500" required name="message" rows="10" cols="50" class="w-100" placeholder="Je me réveille un peu tard mais je..." value="<?php echo trim($_POST['message']); ?>">
+          <textarea id="message" minlength="100" maxlength="1500" required name="message" rows="10" cols="50" class="w-100" placeholder="Je me réveille un peu tard mais je..." value="<?php echo trim($_POST['message']); ?>">
           </textarea>
         </div>
         <?php if (isset($createerror) && strlen($createerror)>0) {

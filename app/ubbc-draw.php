@@ -11,7 +11,7 @@
                     <p class="fl-txt-prune text-center">ou fin depuis moins de 30 minutes</p>
                 </div>
                 <div>
-                    <a class="btn btn-lg fl-bg-electric fl-bg-hov-sadsea fl-txt-40 fl-txt-white mt-3 mb-1" href="<?= $base_url ?>ubbc-userdraw.php"  		>
+                    <a class="btn btn-lg fl-bg-electric fl-bg-hov-sadsea fl-txt-40 fl-txt-white mt-3 mb-1" href="ubbc-userdraw.php"  		>
                         <span>draw a runner !</span>
                     </a>
                 </div>

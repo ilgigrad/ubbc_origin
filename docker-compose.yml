@@ -14,6 +14,7 @@ services:
       - ./certs:/etc/letsencrypt:ro
     depends_on:
       - db
+      - grav
     networks:
       - ubbcnet
 
@@ -35,6 +36,15 @@ services:
       - "23306:3306"
     networks:
       - ubbcnet
+
+  grav:
+    image: getgrav/grav:latest
+    container_name: ubbc-grav
+    volumes:
+      - /home/david/Projects/ubbc.world/user:/var/www/html/user
+    networks:
+      - ubbcnet
+    restart: unless-stopped
 
   certbot:
     image: certbot/certbot

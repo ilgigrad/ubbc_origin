@@ -7,6 +7,7 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use \Mailjet\Resources;
 
 function mailjet_api($to, $subject, $message, $from = 'contact@ubbc.fr', $fromName = 'Team UBBC') {
+    global $apiKey, $apiSecret;
     $mj = new \Mailjet\Client($apiKey, $apiSecret, true, ['version' => 'v3.1']);
 
     $body = [

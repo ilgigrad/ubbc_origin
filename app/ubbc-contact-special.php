@@ -1,5 +1,5 @@
 <?php include("ubbc-header.html"); ?>
-<?php $post = array_merge(
+<?php $_POST = array_merge(
 [
 'email'   => '',
 'sujet'   => 'volunteer',

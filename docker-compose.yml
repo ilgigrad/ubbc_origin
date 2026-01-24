@@ -38,18 +38,6 @@ services:
     networks:
       - ubbcnet
 
-  grav:
-    image: linuxserver/grav:latest
-    container_name: ubbc-grav
-    environment:
-      - PUID=1000
-      - PGID=1000
-      - TZ=Europe/Paris
-    volumes:
-      - /home/david/Projects/ubbc.world/user:/config/www/user
-    networks:
-      - ubbcnet
-    restart: unless-stopped
 
   certbot:
     image: certbot/certbot
@@ -57,7 +45,7 @@ services:
     volumes:
       - ./certs:/etc/letsencrypt
       - ./app:/var/www/html
-    command: certonly --webroot --webroot-path=/var/www/html --email david@ubbc.fr --agree-tos --no-eff-email -d ubbc.fr -d www.ubbc.fr
+    command: certonly --webroot --webroot-path=/var/www/html --email david@ubbc.fr --agree-tos --no-eff-email -d ubbc.fr -d www.ubbc.fr -d world.ubbc.fr
     depends_on:
       - web
     networks:

@@ -39,10 +39,14 @@ services:
       - ubbcnet
 
   grav:
-    image: getgrav/grav:latest
+    image: linuxserver/grav:latest
     container_name: ubbc-grav
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Paris
     volumes:
-      - /home/david/Projects/ubbc.world/user:/var/www/html/user
+      - /home/david/Projects/ubbc.world/user:/config/www/user
     networks:
       - ubbcnet
     restart: unless-stopped

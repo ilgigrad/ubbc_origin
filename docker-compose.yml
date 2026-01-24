@@ -18,6 +18,7 @@ services:
     networks:
       - ubbcnet
 
+
   db:
     image: mysql:8.0
     platform: linux/amd64
@@ -60,6 +61,7 @@ services:
 
 networks:
   ubbcnet:
+    name: ubbcnet
     driver: bridge
 
 volumes:

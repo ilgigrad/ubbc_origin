@@ -16,11 +16,6 @@ tasks:
       - sudo rm -rf ./db_data
       - docker builder prune -f
 
-  switch-http:
-    desc: Bascule vers la version HTTP-only
-    cmds:
-      - cp {{.VHOST_PATH}}/vhost-httponly.conf {{.VHOST_PATH}}/000-default.conf
-
   switch-https:
     desc: Bascule vers la version HTTPS
     cmds:

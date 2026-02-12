@@ -44,7 +44,7 @@ services:
     volumes:
       - ./certs:/etc/letsencrypt
       - ./app:/var/www/html
-    command: certonly --webroot --webroot-path=/var/www/html --email david@ubbc.fr --agree-tos --no-eff-email -d ubbc.fr -d www.ubbc.fr -d world.ubbc.fr
+    command: certonly --webroot --webroot-path=/var/www/html --email david@ubbc.fr --agree-tos --no-eff-email -d ubbc.fr -d www.ubbc.fr -d world.ubbc.fr -d live.ubbc.fr -d tds.ubbc.fr
     depends_on:
       - web
     networks:

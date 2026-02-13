@@ -1,8 +1,9 @@
 <?php
 require_once 'mail-functions.php';
+require_once __DIR__ . '/ubbc-connect.php';
 function ischecked($str1,$str2)
 	{
-		require 'ubbc-connect.php';
+
 		if ($str1 != $str2) {
 			$retstr = '';
 		}
@@ -21,7 +22,6 @@ function ischecked($str1,$str2)
 	}
 
 	function connect(){
-			require 'ubbc-connect.php';
 			$link = mysqli_connect($ubbc_host, $ubbc_user, $ubbc_pass, $ubbc_base);
 			if (mysqli_connect_errno()) {
 				$error= "Échec de la connexion : $link->connect_error,";

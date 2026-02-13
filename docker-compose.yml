@@ -21,11 +21,13 @@ services:
     container_name: ubbc-mysql
     restart: always
     environment:
-      MYSQL_DATABASE: db15800_ubbc
-      MYSQL_USER: db97064
-      MYSQL_PASSWORD: Unfl@t&W1ld
-      MYSQL_ROOT_PASSWORD: root&Unfl@t
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_DATABASE}
+      MYSQL_PASSWORD: ${MYSQL_DATABASE}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_DATABASE}
+      UBBC_INGEST_TOKEN: ${UBBC_INGEST_TOKEN}
       command: --default-authentication-plugin=mysql_native_password
+
     volumes:
       - ./db_data:/var/lib/mysql
       - ./db_dump:/docker-entrypoint-initdb.d

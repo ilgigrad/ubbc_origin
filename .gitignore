@@ -7,7 +7,7 @@ db_dump/
 # =========================
 # Apache generated config
 # =========================
-web/000-default.conf
+# web/000-default.conf
 
 # =========================
 # Certificates / secrets
@@ -37,3 +37,4 @@ vendor/
 # OS
 # =========================
 .DS_Store
+app/static/.DS_Store

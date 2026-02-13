@@ -3,15 +3,12 @@ services:
     container_name: ubbc-web
     build:
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
-      - "443:443"
-      - "80:80"
+    expose:
+      - "80"
     volumes:
       - ./app:/var/www/html
       - ./app/vendor:/var/www/html/vendor
       - ./web/000-default.conf:/etc/apache2/sites-available/000-default.conf
-      - ./certs:/etc/letsencrypt:ro
     depends_on:
       - db
     networks:
@@ -37,23 +34,8 @@ services:
     networks:
       - ubbcnet
 
-
-  certbot:
-    image: certbot/certbot
-    container_name: ubbc-certbot
-    volumes:
-      - ./certs:/etc/letsencrypt
-      - ./app:/var/www/html
-    command: certonly --webroot --webroot-path=/var/www/html --email david@ubbc.fr --agree-tos --no-eff-email -d ubbc.fr -d www.ubbc.fr -d world.ubbc.fr -d tds.ubbc.fr
-    depends_on:
-      - web
-    networks:
-      - ubbcnet
-
 networks:
   ubbcnet:
     name: ubbcnet
     external: true
 
-volumes:
-  certs:

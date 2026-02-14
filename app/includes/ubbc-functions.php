@@ -24,20 +24,22 @@ function ischecked($str1,$str2)
 	}
 
 	function connect(){
-			$link = mysqli_connect($ubbc_host, $ubbc_user, $ubbc_pass, $ubbc_base);
-			if (mysqli_connect_errno()) {
-				$error= "Échec de la connexion : $link->connect_error,";
-				$error=$error."host : $ubbc_host,";
-				$error=$error."user : $ubbc_user,";
-				$error=$error."pass : $ubbc_pass,";
-				$error=$error."base : $ubbc_base";
-				require 'ubbc-error.php';
-				exit();
-			}
-			mysqli_set_charset($link, 'utf8');
-			mysqli_query($link, "SET time_zone = 'Europe/Paris'");
-			return $link;
+function connect(){
+	global $ubbc_host, $ubbc_user, $ubbc_pass, $ubbc_base;
+	$link = mysqli_connect($ubbc_host, $ubbc_user, $ubbc_pass, $ubbc_base);
+	if (mysqli_connect_errno()) {
+		$error= "Échec de la connexion : $link->connect_error,";
+		$error=$error."host : $ubbc_host,";
+		$error=$error."user : $ubbc_user,";
+		$error=$error."pass : $ubbc_pass,";
+		$error=$error."base : $ubbc_base";
+		require 'ubbc-error.php';
+		exit();
 	}
+	mysqli_set_charset($link, 'utf8');
+	mysqli_query($link, "SET time_zone = 'Europe/Paris'");
+	return $link;
+}
 
 function test_live(){
   	$link = connect();

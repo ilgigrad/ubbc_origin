@@ -21,10 +21,10 @@ services:
     container_name: ubbc-mysql
     restart: always
     environment:
-      MYSQL_DATABASE: ${UBBC_DB_NAME}
-      MYSQL_USER: ${UBBC_DB_USER}
-      MYSQL_PASSWORD: ${UBBC_DB_PASS}
-      MYSQL_ROOT_PASSWORD: ${UBBC_DB_ROOT_PASSWORD}
+      UBBC_DB_NAME: ${UBBC_DB_NAME}
+      UBBC_DB_USER: ${UBBC_DB_USER}
+      UBBC_DB_PASS: ${UBBC_DB_PASS}
+      UBBC_DB_ROOT_PASSWORD: ${UBBC_DB_ROOT_PASSWORD}
       UBBC_INGEST_TOKEN: ${UBBC_INGEST_TOKEN}
       command: --default-authentication-plugin=mysql_native_password
 

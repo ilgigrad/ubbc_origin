@@ -5,6 +5,12 @@ services:
       dockerfile: Dockerfile
     expose:
       - "80"
+    environment:
+      UBBC_DB_HOST: ${UBBC_DB_HOST}
+      UBBC_DB_NAME: ${UBBC_DB_NAME}
+      UBBC_DB_USER: ${UBBC_DB_USER}
+      UBBC_DB_PASS: ${UBBC_DB_PASS}
+      UBBC_INGEST_TOKEN: ${UBBC_INGEST_TOKEN}  -
     volumes:
       - ./app:/var/www/html
       - ./app/vendor:/var/www/html/vendor
@@ -21,11 +27,11 @@ services:
     container_name: ubbc-mysql
     restart: always
     environment:
-      UBBC_DB_NAME: ${UBBC_DB_NAME}
-      UBBC_DB_USER: ${UBBC_DB_USER}
-      UBBC_DB_PASS: ${UBBC_DB_PASS}
-      UBBC_DB_ROOT_PASSWORD: ${UBBC_DB_ROOT_PASSWORD}
-      UBBC_INGEST_TOKEN: ${UBBC_INGEST_TOKEN}
+      MYSQL_DATABASE: ${UBBC_DB_NAME}
+      MYSQL_USER: ${UBBC_DB_USER}
+      MYSQL_PASSWORD: ${UBBC_DB_PASS}
+      MYSQL_ROOT_PASSWORD: ${UBBC_DB_ROOT_PASSWORD}
+
       command: --default-authentication-plugin=mysql_native_password
 
     volumes:

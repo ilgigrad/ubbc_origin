@@ -22,7 +22,7 @@ function ischecked($str1,$str2)
 	{
 		return trim(preg_replace('/[\'"%$+*\/=]/', ' ', strip_tags($str)));
 	}
-	
+
 function connect(){
 	global $ubbc_host, $ubbc_user, $ubbc_pass, $ubbc_base;
 	$link = mysqli_connect($ubbc_host, $ubbc_user, $ubbc_pass, $ubbc_base);

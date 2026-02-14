@@ -10,7 +10,7 @@ services:
       UBBC_DB_NAME: ${UBBC_DB_NAME}
       UBBC_DB_USER: ${UBBC_DB_USER}
       UBBC_DB_PASS: ${UBBC_DB_PASS}
-      UBBC_INGEST_TOKEN: ${UBBC_INGEST_TOKEN}  -
+      UBBC_INGEST_TOKEN: ${UBBC_INGEST_TOKEN}
     volumes:
       - ./app:/var/www/html
       - ./app/vendor:/var/www/html/vendor

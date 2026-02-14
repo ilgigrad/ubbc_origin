@@ -1,13 +1,7 @@
 <?php
 
 
-// DB config from env (preferred), fallback to docker service names if needed
-$ubbc_host = getenv('UBBC_DB_HOST') ?: 'ubbc-mysql';
-$ubbc_user = getenv('UBBC_DB_USER') ?: 'ubbc';
-$ubbc_pass = getenv('UBBC_DB_PASS') ?: '';
-$ubbc_base = getenv('UBBC_DB_NAME') ?: 'ubbc';
-
-require_once 'mail-functions.php';
+require_once __DIR__ . '/mail-functions.php';
 require_once __DIR__ . '/ubbc-connect.php';
 function ischecked($str1,$str2)
 	{

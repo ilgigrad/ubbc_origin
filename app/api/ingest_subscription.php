@@ -1,7 +1,7 @@
 <?php
 // /api/ingest_subscription.php
 
-require_once __DIR__ . '/../includes/ubbc-functions.php'; // adapte le chemin
+require_once __DIR__ . '/../includes/db-only.php'; // adapte le chemin
 $link = connect();
 
 header('Content-Type: application/json; charset=utf-8');

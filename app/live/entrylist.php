@@ -1,6 +1,6 @@
 <?php
 declare(strict_types=1);
-
+require_once __DIR__ . '/../includes/helpers.php';
 // /live/entrylist.php
 require_once __DIR__ . '/../includes/db-only.php';
 $link = ubbc_db_connect();
@@ -84,7 +84,7 @@ mysqli_free_result($res);
 
 $nbpage = max(1, (int)ceil($nbusers / $nbperpage));
 if ($cpage > $nbpage) $cpage = $nbpage;
-
+$rowNumber = ($cpage - 1) * $nbperpage + 1;
 // -------- list query
 $sql = "
     SELECT i.*
@@ -129,6 +129,8 @@ include(__DIR__ . '/header.php');
             <table class="mx-auto table table-striped table-hover table-bordered table-sm vw-100 table-responsive-lg">
                 <thead class="thead-light fl-bg-apricot fl-txt-prune fl-txt-hov-sadsea">
                 <tr>
+                    <th class="thin">#</th>
+                    <th class="thin">Cat</th>
                     <th class="medium"><a href="/live/entrylist.php?order=received_at&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Reçu</a></th>
                     <th class="medium"><a href="/live/entrylist.php?order=approved&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Statut</a></th>
                     <th class="large"><a href="/live/entrylist.php?order=lastname&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Nom</a></th>
@@ -138,6 +140,7 @@ include(__DIR__ . '/header.php');
                     <th class="large"><a href="/live/entrylist.php?order=city&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Ville</a></th>
                     <th class="medium"><a href="/live/entrylist.php?order=race&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Course</a></th>
                     <th class="large"><a href="/live/entrylist.php?order=email&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Email</a></th>
+                    <th class="col-index">Index</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -154,17 +157,53 @@ include(__DIR__ . '/header.php');
                             $color = 'class="fl-txt-blood"';
                         }
 
-                        printf('<tr %s>', $color);
-                        printf('<td class="medium">%s</td>', htmlspecialchars((string)$r['received_at']));
-                        printf('<td class="medium">%s</td>', htmlspecialchars((string)$status));
-                        printf('<td class="large text-capitalize">%s</td>', htmlspecialchars((string)$r['lastname']));
-                        printf('<td class="large text-capitalize">%s</td>', htmlspecialchars((string)$r['firstname']));
-                        printf('<td class="thin text-uppercase">%s</td>', htmlspecialchars((string)$r['gender']));
-                        printf('<td class="large text-capitalize">%s</td>', htmlspecialchars((string)$r['club']));
-                        printf('<td class="large text-capitalize">%s</td>', htmlspecialchars((string)$r['city']));
-                        printf('<td class="medium text-capitalize">%s</td>', htmlspecialchars((string)$r['race']));
-                        printf('<td class="large">%s</td>', htmlspecialchars((string)$r['email']));
-                        printf('</tr>');
+                        $approval = $r['approval'] ?? null;
+                        $rowClass = ubbc_is_refused($approval) ? 'row-refused' : '';
+
+                        $approved = $r['approved'] ?? 'reçu'; // ton statut principal
+                        $cat = ubbc_category($r['birthdate'] ?? null);
+
+// payload pour la modale
+                        $payload = [
+                            'name' => trim(($r['firstname'] ?? '') . ' ' . ($r['lastname'] ?? '')),
+                            'email' => $r['email'] ?? '',
+                            'race' => $r['race'] ?? '',
+                            'received_at' => $r['received_at'] ?? '',
+                            'approved' => $approved,
+                            'approval' => $approval ?? '',
+                            'participations' => $r['participations'] ?? '',
+                            'availability' => $r['availability'] ?? '',
+                            'contribution' => $r['contribution'] ?? '',
+                            'motivation' => $r['motivation'] ?? '',
+                        ];
+
+                        $dataEntry = htmlspecialchars(json_encode($payload, JSON_UNESCAPED_UNICODE), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+                        echo "<tr class='{$rowClass}'>";
+
+                        echo "<td>".(int)$rowNumber++."</td>";
+                        echo "<td>".htmlspecialchars((string)($r['received_at'] ?? ''), ENT_QUOTES)."</td>";
+                        echo "<td>".htmlspecialchars((string)$approved, ENT_QUOTES)."</td>";
+
+                        $lastname = htmlspecialchars((string)($r['lastname'] ?? ''), ENT_QUOTES);
+                        $firstname = htmlspecialchars((string)($r['firstname'] ?? ''), ENT_QUOTES);
+
+                        echo "<td>
+  <a class='entry-link' href='#' data-bs-toggle='modal' data-bs-target='#entryModal' data-entry='{$dataEntry}' onclick='return false;'>
+    {$lastname}
+  </a>
+</td>";
+
+                        echo "<td>{$firstname}</td>";
+                        echo "<td>".htmlspecialchars($cat, ENT_QUOTES)."</td>";
+                        echo "<td>".htmlspecialchars((string)($r['gender'] ?? ''), ENT_QUOTES)."</td>";
+                        echo "<td>".htmlspecialchars((string)($r['club'] ?? ''), ENT_QUOTES)."</td>";
+                        echo "<td>".htmlspecialchars((string)($r['city'] ?? ''), ENT_QUOTES)."</td>";
+                        echo "<td>".htmlspecialchars((string)($r['race'] ?? ''), ENT_QUOTES)."</td>";
+                        echo "<td class='col-index'>".htmlspecialchars((string)($r['index'] ?? ''), ENT_QUOTES)."</td>";
+                        echo "<td>".htmlspecialchars((string)($r['email'] ?? ''), ENT_QUOTES)."</td>";
+
+                        echo "</tr>";
                     }
                 }
                 mysqli_free_result($results);
@@ -225,5 +264,70 @@ include(__DIR__ . '/header.php');
             </div>
 
         </div>
-    </section>
+
+    <div class="modal fade" id="entryModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="entryModalTitle">Inscription</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-2"><strong>Email :</strong> <span id="m_email"></span></div>
+                    <div class="mb-2"><strong>Course :</strong> <span id="m_race"></span></div>
+                    <div class="mb-2"><strong>Reçu :</strong> <span id="m_received_at"></span></div>
+                    <div class="mb-3"><strong>Approved :</strong> <span id="m_approved"></span></div>
+
+                    <hr>
+
+                    <div class="mb-3">
+                        <div><strong>Approval :</strong></div>
+                        <div id="m_approval" style="white-space:pre-wrap"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div><strong>Participations :</strong></div>
+                        <div id="m_participations" style="white-space:pre-wrap"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div><strong>Availability :</strong></div>
+                        <div id="m_availability" style="white-space:pre-wrap"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div><strong>Contribution :</strong></div>
+                        <div id="m_contribution" style="white-space:pre-wrap"></div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div><strong>Motivation :</strong></div>
+                        <div id="m_motivation" style="white-space:pre-wrap"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener('click', function(e){
+            const a = e.target.closest('a[data-entry]');
+            if(!a) return;
+
+            const data = JSON.parse(a.getAttribute('data-entry') || '{}');
+
+            document.getElementById('entryModalTitle').textContent = data.name || 'Inscription';
+            document.getElementById('m_email').textContent = data.email || '';
+            document.getElementById('m_race').textContent = data.race || '';
+            document.getElementById('m_received_at').textContent = data.received_at || '';
+            document.getElementById('m_approved').textContent = data.approved || '';
+            document.getElementById('m_approval').textContent = data.approval || '';
+            document.getElementById('m_participations').textContent = data.participations || '';
+            document.getElementById('m_availability').textContent = data.availability || '';
+            document.getElementById('m_contribution').textContent = data.contribution || '';
+            document.getElementById('m_motivation').textContent = data.motivation || '';
+        });
+    </script>
 <?php include(__DIR__ . '/footer.php'); ?>

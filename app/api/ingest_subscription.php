@@ -2,7 +2,7 @@
 // /api/ingest_subscription.php
 
 require_once __DIR__ . '/../includes/db-only.php'; // adapte le chemin
-$link = connect();
+$link = ubbc_db_connect();
 
 header('Content-Type: application/json; charset=utf-8');
 

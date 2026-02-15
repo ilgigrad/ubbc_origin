@@ -64,14 +64,22 @@ $race = $data['Course'] ?? null;
 $club = strtolower($data['Club'] ?? null);
 $licence = strtolower($data['Numéro de licence ou PPS'] ?? null);
 $index = $data['Index ITRA / UTMB'] ?? null;
+
 $participations = $data['Participations UBBC'] ?? null;
 
 $availability = $data['Disponibilités en juillet'] ?? null;
 $contribution = $data['Contribution ravito'] ?? null;
 $motivation = $data['Motivation'] ?? null;
-$charte = $data["J'accepte la charte de l'UBBC"] ?? ($data["J’accepte la charte de l’UBBC"] ?? null);
-$charterAccepted = ($charte === '1' || strtolower((string)$charte) === 'true') ? 1 : 0;
+$charte =
+    $data["J'accepte la charte de l'UBBC"]
+    ?? $data["J’accepte la charte de l’UBBC"]
+    ?? null;
 
+$charterAccepted = (
+    $charte === '1'
+    || strtolower((string)$charte) === 'true'
+    || strtolower((string)$charte) === 'oui'
+) ? 1 : 0;
 // Birthdate sanity
 if ($birthdate !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) {
     $birthdate = null;
@@ -87,6 +95,23 @@ $stmt = mysqli_prepare($link, "
       (?, ?, ?, ?, ?, ?, ?, ?,
        ?, ?, ?, ?, ?,
        ?, ?, ?, ?)
+       ON DUPLICATE KEY UPDATE
+  lastname=VALUES(lastname),
+  firstname=VALUES(firstname),
+  birthdate=VALUES(birthdate),
+  gender=VALUES(gender),
+  city=VALUES(city),
+  availability=VALUES(availability),
+  contribution=VALUES(contribution),
+  motivation=VALUES(motivation),
+  charte=VALUES(charte),
+  raw_text=VALUES(raw_text),
+  club=VALUES(club),
+  participations=VALUES(participations),
+  `index`=VALUES(`index`),
+  licence=VALUES(licence),
+  source_file=VALUES(source_file),
+  received_at=CURRENT_TIMESTAMP;
 ");
 
 if (!$stmt) {

@@ -143,11 +143,11 @@ body {
 
 /* ligne refusée (approval=false) */
 .row-refused {
-    background: #3b0a0a !important;
-    color: #fff;
+    color: #d1313d !important;
 }
-.row-refused a { color: #fff; text-decoration: underline; }
-.row-refused td { border-bottom-color: rgba(255,255,255,.12); }
+
+.row-refused a { color: #dc7088; text-decoration: none; }
+
 
 /* colonne index */
 .col-index { text-align: right; width: 70px; white-space: nowrap; }
@@ -157,12 +157,5 @@ body {
 .entry-link:hover { text-decoration: underline; }
 
 /* Non approved = blood */
-.row-refused {
-    background-color: #d1313d !important;
-    color: #fff;
-}
 
-/* Optionnel : pending */
-.row-pending {
-    background-color: #f2f2f2;
-}
+

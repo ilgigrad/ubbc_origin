@@ -103,7 +103,7 @@ if ($showAll === 'yes') {
 $results = mysqli_query($link, $sql);
 
 // -------- page
-include(__DIR__ . '/../ubbc-header.html');
+include(__DIR__ . '/header.php');
 ?>
     <section class="container-fluid">
         <div class="row flex-column">
@@ -226,4 +226,4 @@ include(__DIR__ . '/../ubbc-header.html');
 
         </div>
     </section>
-<?php include(__DIR__ . '/../ubbc-footer.html'); ?>
+<?php include(__DIR__ . '/footer.php'); ?>

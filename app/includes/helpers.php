@@ -1,4 +1,6 @@
+<?php
 function ubbc_category(?string $birthdate): string
+
 {
 if (!$birthdate || !preg_match('/^\d{4}/', $birthdate)) {
 return '-';
@@ -41,3 +43,4 @@ function ubbc_is_refused(?string $approval): bool
 $v = strtolower(trim((string)$approval));
 return in_array($v, ['false','0','no','non','refused','refuse','rejected','deny','denied'], true);
 }
+?>

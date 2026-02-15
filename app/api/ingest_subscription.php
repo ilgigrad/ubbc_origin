@@ -81,22 +81,43 @@ if ($birthdate !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) {
 $stmt = mysqli_prepare($link, "
     INSERT INTO inscriptions
       (source_file, email, lastname, firstname, birthdate, gender, city, race,
-       availability, contribution, motivation, charte, raw_text, club, participations, index, licence)
+       availability, contribution, motivation, charte, raw_text,
+       club, participations, `index`, licence)
     VALUES
       (?, ?, ?, ?, ?, ?, ?, ?,
-       ?, ?, ?, ?, ?)
+       ?, ?, ?, ?, ?,
+       ?, ?, ?, ?)
 ");
+
 if (!$stmt) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'prepare_failed', 'detail' => mysqli_error($link)]);
     exit;
 }
 
+// types: 15 strings + 2 ints (charte, index)
+$indexInt = ($index !== null && $index !== '') ? (int)$index : null;
+
 mysqli_stmt_bind_param(
     $stmt,
-    "sssssssssssis",
-    $sourceFile, $email, $lastname, $firstname, $birthdate, $gender, $city, $race,
-    $availability, $contribution, $motivation, $charterAccepted, $raw, $club,$participations,$index,$licence
+    "sssssssssssisssis",
+    $sourceFile,
+    $email,
+    $lastname,
+    $firstname,
+    $birthdate,
+    $gender,
+    $city,
+    $race,
+    $availability,
+    $contribution,
+    $motivation,
+    $charterAccepted, // i
+    $raw,
+    $club,
+    $participations,
+    $indexInt,        // i
+    $licence
 );
 
 if (!mysqli_stmt_execute($stmt)) {

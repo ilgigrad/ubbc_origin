@@ -54,19 +54,23 @@ foreach ($lines as $line) {
 }
 
 // Mapping champs FR -> DB
-$email = $data['Email'] ?? null;
-$lastname = $data['Nom'] ?? null;
-$firstname = $data['Prénom'] ?? null;
+$email = strtolower($data['Email'] ?? null);
+$lastname = strtolower($data['Nom'] ?? null);
+$firstname = strtolower($data['Prénom'] ?? null);
 $birthdate = $data['Date de naissance'] ?? null;
 $gender = $data['Genre'] ?? null;
-$city = $data['Ville'] ?? null;
+$city = strtolower($data['Ville'] ?? null);
 $race = $data['Course'] ?? null;
+$club = strtolower($data['Club'] ?? null);
+$licence = strtolower($data['Numéro de licence ou PPS'] ?? null);
+$index = $data['Index ITRA / UTMB'] ?? null;
+$participations = $data['Participations UBBC'] ?? null;
 
 $availability = $data['Disponibilités en juillet'] ?? null;
 $contribution = $data['Contribution ravito'] ?? null;
 $motivation = $data['Motivation'] ?? null;
-$charter = $data["J'accepte la charte de l'UBBC"] ?? ($data["J’accepte la charte de l’UBBC"] ?? null);
-$charterAccepted = ($charter === '1' || strtolower((string)$charter) === 'true') ? 1 : 0;
+$charte = $data["J'accepte la charte de l'UBBC"] ?? ($data["J’accepte la charte de l’UBBC"] ?? null);
+$charterAccepted = ($charte === '1' || strtolower((string)$charte) === 'true') ? 1 : 0;
 
 // Birthdate sanity
 if ($birthdate !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) {
@@ -77,7 +81,7 @@ if ($birthdate !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) {
 $stmt = mysqli_prepare($link, "
     INSERT INTO inscriptions
       (source_file, email, lastname, firstname, birthdate, gender, city, race,
-       availability_json, contribution, motivation, charter_accepted, raw_text)
+       availability, contribution, motivation, charte, raw_text, club, participations, index, licence)
     VALUES
       (?, ?, ?, ?, ?, ?, ?, ?,
        ?, ?, ?, ?, ?)
@@ -92,7 +96,7 @@ mysqli_stmt_bind_param(
     $stmt,
     "sssssssssssis",
     $sourceFile, $email, $lastname, $firstname, $birthdate, $gender, $city, $race,
-    $availability, $contribution, $motivation, $charterAccepted, $raw
+    $availability, $contribution, $motivation, $charterAccepted, $raw, $club,$participations,$index,$licence
 );
 
 if (!mysqli_stmt_execute($stmt)) {

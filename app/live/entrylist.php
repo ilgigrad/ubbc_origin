@@ -71,7 +71,7 @@ $selectCols = "
     i.approved,
     i.`index`,
     i.licence,
-    COALESCE(i.review_note, i.approval) AS review_note
+    i.review_note
 ";
 
 if ($dedupe === 'yes') {

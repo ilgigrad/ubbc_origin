@@ -38,9 +38,5 @@ if ($age >= 23 && $age <= 34) return 'SE';
 return '-';
 }
 
-function ubbc_is_refused(?string $approval): bool
-{
-$v = strtolower(trim((string)$approval));
-return in_array($v, ['false','0','no','non','refused','refuse','rejected','deny','denied'], true);
-}
+
 ?>

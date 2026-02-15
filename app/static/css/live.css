@@ -155,3 +155,14 @@ body {
 /* lien nom cliquable */
 .entry-link { cursor: pointer; font-weight: 600; }
 .entry-link:hover { text-decoration: underline; }
+
+/* Non approved = blood */
+.row-refused {
+    background-color: #d1313d !important;
+    color: #fff;
+}
+
+/* Optionnel : pending */
+.row-pending {
+    background-color: #f2f2f2;
+}

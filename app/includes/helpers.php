@@ -128,19 +128,6 @@ function category_from_birthdate(?string $birthdate): string {
     return '—';
 }
 
-function status_class(array $r): string {
-    $refused  = (int)($r['refused'] ?? 0);
-    $approved = (int)($r['approved'] ?? 0);
-    if ($refused === 1) return 'row-refused';
-    if ($approved === 1) return 'row-approved';
-    return 'row-pending';
-}
-
-function bool_icon(int $v, string $labelTrue, string $labelFalse): string {
-    if ($v === 1) {
-        return '<span class="bool-icon bool-true" title="'.h($labelTrue).'" aria-label="'.h($labelTrue).'"></span>';
-    }
-    return '<span class="bool-icon bool-false" title="'.h($labelFalse).'" aria-label="'.h($labelFalse).'"></span>';
 }
 
 /**
@@ -192,6 +179,7 @@ function ubbc_dash_if_zero($v): string {
     $n = (int)$v;
     return ($n <= 0) ? '—' : (string)$n;
 }
+
 function ubbc_compute_approval(array $row): array
 {
     $refused = (int)($row['refused'] ?? 0);
@@ -239,12 +227,6 @@ function ubbc_compute_approval(array $row): array
 
 }
 
-function refused_icon(int $refused): string {
-    if ($refused === 1) {
-        return '<span class="refused-icon refused-on" title="refused" aria-label="refused"></span>';
-    }
-    return '<span class="refused-icon refused-off" title="not refused" aria-label="not refused"></span>';
-}
 
 function ubbc_status(string $approved, string $refused): string {
     if ((int)$refused === 1) {
@@ -256,10 +238,15 @@ function ubbc_status(string $approved, string $refused): string {
     return 'pending';
 }
 
-function ubbc_status_badge(string $status): string {
-    return '<span class="status-badge status-' . $status . '">' . ucfirst($status) . '</span>';
+function status_class(array $r): string {
+    $refused  = (int)($r['refused'] ?? 0);
+    $approved = (int)($r['approved'] ?? 0);
+    if ($refused === 1) return 'row-refused';
+    if ($approved === 1) return 'row-approved';
+    return 'row-pending';
 }
 
-function ubbc_status_row_class(string $status): string {
-    return 'row-' . $status;
+
+function ubbc_h(?string $s): string {
+    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }

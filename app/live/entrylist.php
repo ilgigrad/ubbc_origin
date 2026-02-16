@@ -8,7 +8,80 @@ require_once __DIR__ . '/../includes/helpers.php';
 
 $link = ubbc_db_connect();
 
-// --- params
+// -------------------------
+// Utils (local)
+// -------------------------
+function ubbc_h(?string $s): string {
+    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function ubbc_status_class(array $r): string {
+    $refused  = (int)($r['refused'] ?? 0);
+    $approved = (int)($r['approved'] ?? 0);
+    if ($refused === 1) return 'row-refused';
+    if ($approved === 1) return 'row-approved';
+    return 'row-pending';
+}
+
+function ubbc_bool_icon(int $v, string $titleTrue, string $titleFalse): string {
+    if ($v === 1) {
+        return '<span class="bool-icon bool-true" title="'.ubbc_h($titleTrue).'" aria-label="'.ubbc_h($titleTrue).'"></span>';
+    }
+    return '<span class="bool-icon bool-false" title="'.ubbc_h($titleFalse).'" aria-label="'.ubbc_h($titleFalse).'"></span>';
+}
+
+/**
+ * Extrait les clés JSON d'un champ présent dans raw_text (format "Label: {json...}").
+ * On gère les entités HTML (&quot; etc) + apostrophes typographiques.
+ */
+function ubbc_extract_json_keys_from_raw(string $raw, array $labelCandidates): array {
+    $raw = html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    // normalise apostrophes
+    $raw = str_replace(["’","‘"], "'", $raw);
+
+    foreach ($labelCandidates as $label) {
+        // match ligne "Label: ...."
+        $pattern = '/^'.preg_quote($label, '/').'\s*:\s*(.+)$/mi';
+        if (!preg_match($pattern, $raw, $m)) {
+            continue;
+        }
+
+        $value = trim($m[1]);
+
+        // parfois tronqué dans une ligne -> on tente de récupérer à partir du premier { jusqu'au dernier }
+        $start = strpos($value, '{');
+        $end   = strrpos($value, '}');
+        if ($start !== false && $end !== false && $end > $start) {
+            $value = substr($value, $start, $end - $start + 1);
+        }
+
+        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+        $json = json_decode($value, true);
+        if (is_array($json)) {
+            return array_keys($json);
+        }
+    }
+
+    return [];
+}
+
+function ubbc_ul(array $items): string {
+    if (count($items) === 0) {
+        return '<span class="muted">—</span>';
+    }
+    $out = '<ul class="mini-list">';
+    foreach ($items as $it) {
+        $out .= '<li>'.ubbc_h((string)$it).'</li>';
+    }
+    $out .= '</ul>';
+    return $out;
+}
+
+// -------------------------
+// Params
+// -------------------------
 $searchQuery = isset($_GET['search']) ? trim((string)$_GET['search']) : '';
 $showAll = (isset($_GET['showAll']) && $_GET['showAll'] === 'yes') ? 'yes' : 'no';
 
@@ -21,21 +94,29 @@ $cpage = (isset($_GET['page']) && (int)$_GET['page'] > 0) ? (int)$_GET['page'] :
 
 // tri (whitelist stricte)
 $allowedOrder = [
-    'received_at' => 'received_at',
-    'lastname'    => 'lastname',
-    'firstname'   => 'firstname',
-    'email'       => 'email',
-    'gender'      => 'gender',
-    'club'        => 'club',
-    'city'        => 'city',
-    'race'        => 'race',
-    'index'       => '`index`',
+    'received_at'    => 'received_at',
+    'lastname'       => 'lastname',
+    'firstname'      => 'firstname',
+    'gender'         => 'gender',
+    'itra'           => 'itra',
+    'race'           => 'race',
+    'club'           => 'club',
+    'city'           => 'city',
+    'licence'        => 'licence',
+    'participations' => 'participations',
+    'availability'   => 'availability',
+    'approved'       => 'approved',
+    'refused'        => 'refused',
 ];
-$order = $allowedOrder[$_GET['order'] ?? 'received_at'] ?? 'received_at';
+$orderKey = $_GET['order'] ?? 'received_at';
+$order = $allowedOrder[$orderKey] ?? 'received_at';
+
 $asc = (isset($_GET['asc']) && in_array($_GET['asc'], ['asc','desc'], true)) ? $_GET['asc'] : 'desc';
 $dasc = ($asc === 'asc') ? 'desc' : 'asc';
 
-// --- search filter (escaped)
+// -------------------------
+// Search filter
+// -------------------------
 $searchSql = '';
 if ($searchQuery !== '') {
     $q = mysqli_real_escape_string($link, $searchQuery);
@@ -45,12 +126,15 @@ if ($searchQuery !== '') {
         i.firstname LIKE '%$q%' OR
         i.club LIKE '%$q%' OR
         i.city LIKE '%$q%' OR
-        i.race LIKE '%$q%'
+        i.race LIKE '%$q%' OR
+        i.licence LIKE '%$q%' OR
+        i.review_note LIKE '%$q%'
     )";
 }
 
-// --- dataset (dedupe or not)
-// Note: review_note = nouveau nom; fallback vers approval si pas encore migré
+// -------------------------
+// Dataset (dedupe or not)
+// -------------------------
 $selectCols = "
     i.id,
     i.source_file,
@@ -62,16 +146,17 @@ $selectCols = "
     i.city,
     i.race,
     i.club,
+    i.licence,
     i.participations,
     i.availability,
+    i.itra,
+    i.review_note,
+    i.approved,
+    i.refused,
     i.contribution,
     i.motivation,
     i.raw_text,
-    i.received_at,
-    i.approved,
-    i.`index`,
-    i.licence,
-    i.review_note
+    i.received_at
 ";
 
 if ($dedupe === 'yes') {
@@ -95,7 +180,7 @@ if ($dedupe === 'yes') {
 
 $whereSql = $searchSql;
 
-// --- count
+// count
 $sqlCount = "SELECT COUNT(*) AS nb $fromSql $whereSql";
 $resCount = mysqli_query($link, $sqlCount);
 $rowCount = $resCount ? mysqli_fetch_array($resCount, MYSQLI_ASSOC) : null;
@@ -105,7 +190,7 @@ if ($resCount) mysqli_free_result($resCount);
 $nbpage = max(1, (int)ceil($nbusers / $nbperpage));
 if ($cpage > $nbpage) $cpage = $nbpage;
 
-// --- list query
+// list
 $sql = "SELECT $selectCols $fromSql $whereSql ORDER BY $order $asc, received_at DESC";
 
 if ($showAll === 'yes') {
@@ -119,136 +204,224 @@ if ($showAll === 'yes') {
 
 $results = mysqli_query($link, $sql);
 
-// headers must be sent before any output
+// headers
 header('Content-Type: text/html; charset=utf-8');
-
 include(__DIR__ . '/header.php');
 
-// base url for pagination/sorting
-$base = "/live/entrylist.php?order=" . urlencode($_GET['order'] ?? 'received_at')
-    . "&asc=" . urlencode($asc)
-    . "&search=" . urlencode($searchQuery)
-    . "&showAll=" . urlencode($showAll)
-    . "&dedupe=" . urlencode($dedupe);
+// base url helper
+function ubbc_link(string $order, string $asc, string $search, string $showAll, string $dedupe, int $page = 1): string {
+    return "/live/entrylist.php?order=" . urlencode($order)
+        . "&asc=" . urlencode($asc)
+        . "&search=" . urlencode($search)
+        . "&showAll=" . urlencode($showAll)
+        . "&dedupe=" . urlencode($dedupe)
+        . "&page=" . (int)$page;
+}
 
 ?>
     <form class="live-toolbar" method="GET" action="/live/entrylist.php">
-        <input type="text" name="search" value="<?php echo htmlspecialchars($searchQuery, ENT_QUOTES); ?>" placeholder="nom, email, club, ville...">
+        <input type="text" name="search" value="<?php echo ubbc_h($searchQuery); ?>" placeholder="nom, email, club, ville, licence, note...">
 
-        <input type="hidden" name="order" value="<?php echo htmlspecialchars($_GET['order'] ?? 'received_at', ENT_QUOTES); ?>">
-        <input type="hidden" name="asc" value="<?php echo htmlspecialchars($asc, ENT_QUOTES); ?>">
-        <input type="hidden" name="showAll" value="<?php echo htmlspecialchars($showAll, ENT_QUOTES); ?>">
-        <input type="hidden" name="dedupe" value="<?php echo htmlspecialchars($dedupe, ENT_QUOTES); ?>">
+        <input type="hidden" name="order" value="<?php echo ubbc_h($orderKey); ?>">
+        <input type="hidden" name="asc" value="<?php echo ubbc_h($asc); ?>">
+        <input type="hidden" name="showAll" value="<?php echo ubbc_h($showAll); ?>">
+        <input type="hidden" name="dedupe" value="<?php echo ubbc_h($dedupe); ?>">
 
-        <button class="btn btn-dark btn-sm" type="submit">Search</button>
-        <a class="btn btn-outline-dark btn-sm" href="/live/entrylist.php">Clear</a>
-
-        <?php if ($dedupe === 'yes'): ?>
-            <a class="btn btn-outline-dark btn-sm" href="/live/entrylist.php?dedupe=no&search=<?php echo urlencode($searchQuery); ?>">Voir doublons</a>
-        <?php else: ?>
-            <a class="btn btn-outline-dark btn-sm" href="/live/entrylist.php?dedupe=yes&search=<?php echo urlencode($searchQuery); ?>">Masquer doublons</a>
-        <?php endif; ?>
+        <button class="btn btn-sm btn-electric" type="submit">Rechercher</button>
 
         <?php if ($showAll === 'no'): ?>
-            <a class="btn btn-outline-dark btn-sm" href="/live/entrylist.php?showAll=yes&dedupe=<?php echo urlencode($dedupe); ?>&search=<?php echo urlencode($searchQuery); ?>">Déplier</a>
+            <a class="btn btn-sm btn-electric" href="<?php echo ubbc_link($orderKey, $asc, $searchQuery, 'yes', $dedupe, 1); ?>">Déplier</a>
         <?php else: ?>
-            <a class="btn btn-outline-dark btn-sm" href="/live/entrylist.php?showAll=no&dedupe=<?php echo urlencode($dedupe); ?>&search=<?php echo urlencode($searchQuery); ?>">Replier</a>
+            <a class="btn btn-sm btn-electric" href="<?php echo ubbc_link($orderKey, $asc, $searchQuery, 'no', $dedupe, 1); ?>">Replier</a>
         <?php endif; ?>
+
+        <?php if ($dedupe === 'yes'): ?>
+            <a class="btn btn-sm btn-peach" href="<?php echo ubbc_link($orderKey, $asc, $searchQuery, $showAll, 'no', 1); ?>">Voir doublons</a>
+        <?php else: ?>
+            <a class="btn btn-sm btn-prune" href="<?php echo ubbc_link($orderKey, $asc, $searchQuery, $showAll, 'yes', 1); ?>">Masquer doublons</a>
+        <?php endif; ?>
+
+        <div class="muted ms-auto">
+            <?php echo (int)$nbusers; ?> entrées
+        </div>
     </form>
 
     <div class="live-card">
         <table class="live-table">
             <thead>
             <tr>
-                <th>#</th>
-                <th><a href="/live/entrylist.php?order=received_at&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Reçu</a></th>
-                <th><a href="/live/entrylist.php?order=lastname&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Nom</a></th>
-                <th><a href="/live/entrylist.php?order=firstname&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Prénom</a></th>
-                <th>Cat</th>
-                <th><a href="/live/entrylist.php?order=gender&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Genre</a></th>
-                <th><a href="/live/entrylist.php?order=club&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Club</a></th>
-                <th><a href="/live/entrylist.php?order=city&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Ville</a></th>
-                <th><a href="/live/entrylist.php?order=race&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Course</a></th>
-                <th><a href="/live/entrylist.php?order=email&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Email</a></th>
-                <th class="col-index"><a href="/live/entrylist.php?order=index&asc=<?php echo $dasc; ?>&search=<?php echo urlencode($searchQuery); ?>&showAll=<?php echo $showAll; ?>&dedupe=<?php echo $dedupe; ?>">Index</a></th>
+                <th class="col-num">#</th>
+                <th class="col-name"><a href="<?php echo ubbc_link('lastname', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">Nom</a></th>
+                <th class="col-first"><a href="<?php echo ubbc_link('firstname', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">Prénom</a></th>
+                <th class="col-g"><a href="<?php echo ubbc_link('gender', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">Gender</a></th>
+                <th class="col-cat">Cat</th>
+                <th class="col-itra"><a href="<?php echo ubbc_link('itra', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">Itra</a></th>
+                <th class="col-race"><a href="<?php echo ubbc_link('race', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">Race</a></th>
+                <th class="col-club"><a href="<?php echo ubbc_link('club', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">Club</a></th>
+                <th class="col-city"><a href="<?php echo ubbc_link('city', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">City</a></th>
+                <th class="col-lic"><a href="<?php echo ubbc_link('licence', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">Licence</a></th>
+                <th class="col-part"><a href="<?php echo ubbc_link('participations', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">Participations</a></th>
+                <th class="col-av"><a href="<?php echo ubbc_link('availability', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">Availability</a></th>
+                <th class="col-note">review_note</th>
+                <th class="col-appr"><a href="<?php echo ubbc_link('approved', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">approved</a></th>
+                <th class="col-ref"><a href="<?php echo ubbc_link('refused', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">refused</a></th>
+                <th class="col-rec"><a href="<?php echo ubbc_link('received_at', $dasc, $searchQuery, $showAll, $dedupe, 1); ?>">Received at</a></th>
             </tr>
             </thead>
+
             <tbody>
-            <?php
-            if (!$results || mysqli_num_rows($results) === 0) {
-                echo "<tr><td colspan='11' style='text-align:center;padding:18px'>Pas d'inscription</td></tr>";
-            } else {
-                while ($r = mysqli_fetch_array($results, MYSQLI_ASSOC)) {
-                    $approvedVal = $r['approved']; // bool/int/null
-                    $rowClass = ((string)$approvedVal !== '' && $approvedVal !== null && (int)$approvedVal === 0) ? 'row-refused' : '';
+            <?php if (!$results || mysqli_num_rows($results) === 0): ?>
+                <tr><td colspan="16" class="empty">Pas d'inscription</td></tr>
+            <?php else: ?>
+                <?php while ($r = mysqli_fetch_array($results, MYSQLI_ASSOC)): ?>
+                    <?php
+                    $rowClass = ubbc_status_class($r);
+
+                    $lastname  = (string)($r['lastname'] ?? '');
+                    $firstname = (string)($r['firstname'] ?? '');
+                    $gender    = (string)($r['gender'] ?? '');
+                    $cat       = ubbc_category($r['birthdate'] ?? null);
+
+                    $itra = $r['itra'];
+                    $itra = ($itra === null || $itra === '') ? '' : (string)(int)$itra;
+
+                    $availability   = (int)($r['availability'] ?? 0);
+                    $approved       = (int)($r['approved'] ?? 0);
+                    $refused        = (int)($r['refused'] ?? 0);
+                    $participations = (string)($r['participations'] ?? '');
+                    $review_note    = (string)($r['review_note'] ?? '');
+
+                    // modale: on ajoute les listes "clés uniquement" depuis raw_text
+                    $rawText = (string)($r['raw_text'] ?? '');
+                    $availabilityKeys = ubbc_extract_json_keys_from_raw($rawText, [
+                        "Disponibilités en juillet",
+                        "Disponibilites en juillet"
+                    ]);
+                    $participationKeys = ubbc_extract_json_keys_from_raw($rawText, [
+                        "Participations UBBC",
+                        "Participations"
+                    ]);
 
                     $payload = [
-                        'name' => trim((string)($r['firstname'] ?? '') . ' ' . (string)($r['lastname'] ?? '')),
-                        'email' => $r['email'] ?? '',
-                        'race' => $r['race'] ?? '',
-                        'received_at' => $r['received_at'] ?? '',
-                        'approved' => $approvedVal,
-                        'review_note' => $r['review_note'] ?? '',
-                        'participations' => $r['participations'] ?? '',
-                        'availability' => $r['availability'] ?? '',
-                        'contribution' => $r['contribution'] ?? '',
-                        'motivation' => $r['motivation'] ?? '',
+                        'name' => trim($firstname . ' ' . $lastname),
+                        'email' => (string)($r['email'] ?? ''),
+                        'birthdate' => (string)($r['birthdate'] ?? ''),
+                        'race' => (string)($r['race'] ?? ''),
+                        'club' => (string)($r['club'] ?? ''),
+                        'city' => (string)($r['city'] ?? ''),
+                        'licence' => (string)($r['licence'] ?? ''),
+                        'itra' => $itra,
+                        'received_at' => (string)($r['received_at'] ?? ''),
+                        'source_file' => (string)($r['source_file'] ?? ''),
+                        'approved' => $approved,
+                        'refused' => $refused,
+                        'review_note' => $review_note,
+                        'motivation' => (string)($r['motivation'] ?? ''),
+                        'contribution' => (string)($r['contribution'] ?? ''),
+                        'availability_keys' => $availabilityKeys,
+                        'participation_keys' => $participationKeys,
                     ];
                     $dataEntry = htmlspecialchars(json_encode($payload, JSON_UNESCAPED_UNICODE), ENT_QUOTES | ENT_HTML5, 'UTF-8');
 
-                    $lastname = htmlspecialchars((string)($r['lastname'] ?? ''), ENT_QUOTES);
-                    $firstname = htmlspecialchars((string)($r['firstname'] ?? ''), ENT_QUOTES);
+                    ?>
+                    <tr class="<?php echo ubbc_h($rowClass); ?>">
+                        <td class="col-num"><?php echo (int)$rowNumber++; ?></td>
 
-                    echo "<tr class='{$rowClass}'>";
-                    echo "<td>" . (int)$rowNumber++ . "</td>";
-                    echo "<td>" . htmlspecialchars((string)($r['received_at'] ?? ''), ENT_QUOTES) . "</td>";
+                        <td class="col-name">
+                            <a class="entry-link" href="#"
+                               data-bs-toggle="modal" data-bs-target="#entryModal"
+                               data-entry="<?php echo $dataEntry; ?>"
+                               onclick="return false;">
+                                <?php echo ubbc_h($lastname); ?>
+                            </a>
+                        </td>
 
-                    // Nom = déclencheur modale
-                    echo "<td><a class='entry-link' href='#' data-bs-toggle='modal' data-bs-target='#entryModal' data-entry='{$dataEntry}' onclick='return false;'>{$lastname}</a></td>";
+                        <td class="col-first">
+                            <a class="entry-link" href="#"
+                               data-bs-toggle="modal" data-bs-target="#entryModal"
+                               data-entry="<?php echo $dataEntry; ?>"
+                               onclick="return false;">
+                                <?php echo ubbc_h($firstname); ?>
+                            </a>
+                        </td>
 
-                    echo "<td>{$firstname}</td>";
-                    echo "<td>" . htmlspecialchars(ubbc_category($r['birthdate'] ?? null), ENT_QUOTES) . "</td>";
-                    echo "<td>" . htmlspecialchars((string)($r['gender'] ?? ''), ENT_QUOTES) . "</td>";
-                    echo "<td>" . htmlspecialchars((string)($r['club'] ?? ''), ENT_QUOTES) . "</td>";
-                    echo "<td>" . htmlspecialchars((string)($r['city'] ?? ''), ENT_QUOTES) . "</td>";
-                    echo "<td>" . htmlspecialchars((string)($r['race'] ?? ''), ENT_QUOTES) . "</td>";
-                    echo "<td>" . htmlspecialchars((string)($r['email'] ?? ''), ENT_QUOTES) . "</td>";
-                    echo "<td class='col-index'>" . htmlspecialchars((string)($r['index'] ?? ''), ENT_QUOTES) . "</td>";
-                    echo "</tr>";
-                }
-            }
-            if ($results) mysqli_free_result($results);
-            mysqli_close($link);
-            ?>
+                        <td class="col-g"><?php echo ubbc_h($gender); ?></td>
+                        <td class="col-cat"><?php echo ubbc_h((string)$cat); ?></td>
+                        <td class="col-itra"><?php echo ubbc_h($itra); ?></td>
+                        <td class="col-race"><?php echo ubbc_h((string)($r['race'] ?? '')); ?></td>
+                        <td class="col-club"><?php echo ubbc_h((string)($r['club'] ?? '')); ?></td>
+                        <td class="col-city"><?php echo ubbc_h((string)($r['city'] ?? '')); ?></td>
+                        <td class="col-lic"><?php echo ubbc_h((string)($r['licence'] ?? '')); ?></td>
+
+                        <td class="col-part"><?php echo ubbc_h($participations); ?></td>
+
+                        <td class="col-av">
+                            <?php echo ubbc_bool_icon($availability, "dispo 24-31", "pas dispo 24-31"); ?>
+                        </td>
+
+                        <td class="col-note"><?php echo ubbc_h($review_note); ?></td>
+
+                        <td class="col-appr">
+                            <?php echo ubbc_bool_icon($approved, "approved", "not approved"); ?>
+                        </td>
+
+                        <td class="col-ref">
+                            <?php echo ubbc_bool_icon($refused, "refused", "not refused"); ?>
+                        </td>
+
+                        <td class="col-rec"><?php echo ubbc_h((string)($r['received_at'] ?? '')); ?></td>
+                    </tr>
+                <?php endwhile; ?>
+            <?php endif; ?>
             </tbody>
         </table>
     </div>
 
+<?php
+if ($results) mysqli_free_result($results);
+mysqli_close($link);
+?>
+
 <?php if ($nbpage > 1 && $showAll === 'no'): ?>
-    <div class="live-pagination">
+    <nav class="live-pagination" aria-label="Pagination">
         <?php
-        $baseNoPage = "/live/entrylist.php?order=" . urlencode($_GET['order'] ?? 'received_at')
+        $base = "/live/entrylist.php?order=" . urlencode($orderKey)
             . "&asc=" . urlencode($asc)
             . "&search=" . urlencode($searchQuery)
-            . "&showAll=no"
+            . "&showAll=" . urlencode($showAll)
             . "&dedupe=" . urlencode($dedupe);
 
-        $start = max(1, $cpage - 2);
-        $end = min($nbpage, $cpage + 2);
+        $mk = function(int $p) use ($base): string { return $base . "&page=" . $p; };
 
+        // window
+        $start = max(1, $cpage - 2);
+        $end   = min($nbpage, $cpage + 2);
         if ($cpage <= 3) { $start = 1; $end = min(5, $nbpage); }
         if ($cpage >= $nbpage - 2) { $start = max(1, $nbpage - 4); $end = $nbpage; }
-
-        if ($cpage > 1) echo "<a href='{$baseNoPage}&page=1'>&laquo;</a>";
-
-        for ($i = $start; $i <= $end; $i++) {
-            if ($i === $cpage) echo "<span class='current'>{$i}</span>";
-            else echo "<a href='{$baseNoPage}&page={$i}'>{$i}</a>";
-        }
-
-        if ($cpage < $nbpage) echo "<a href='{$baseNoPage}&page={$nbpage}'>&raquo;</a>";
         ?>
-    </div>
+
+        <a class="page-btn <?php echo ($cpage <= 1) ? 'disabled' : ''; ?>" href="<?php echo ($cpage <= 1) ? '#' : $mk(1); ?>">«</a>
+        <a class="page-btn <?php echo ($cpage <= 1) ? 'disabled' : ''; ?>" href="<?php echo ($cpage <= 1) ? '#' : $mk($cpage - 1); ?>">‹</a>
+
+        <?php if ($start > 1): ?>
+            <span class="page-ellipsis">…</span>
+        <?php endif; ?>
+
+        <?php for ($i = $start; $i <= $end; $i++): ?>
+            <?php if ($i === $cpage): ?>
+                <span class="page-btn current"><?php echo $i; ?></span>
+            <?php else: ?>
+                <a class="page-btn" href="<?php echo $mk($i); ?>"><?php echo $i; ?></a>
+            <?php endif; ?>
+        <?php endfor; ?>
+
+        <?php if ($end < $nbpage): ?>
+            <span class="page-ellipsis">…</span>
+        <?php endif; ?>
+
+        <a class="page-btn <?php echo ($cpage >= $nbpage) ? 'disabled' : ''; ?>" href="<?php echo ($cpage >= $nbpage) ? '#' : $mk($cpage + 1); ?>">›</a>
+        <a class="page-btn <?php echo ($cpage >= $nbpage) ? 'disabled' : ''; ?>" href="<?php echo ($cpage >= $nbpage) ? '#' : $mk($nbpage); ?>">»</a>
+    </nav>
 <?php endif; ?>
 
     <!-- Modal -->
@@ -259,61 +432,111 @@ $base = "/live/entrylist.php?order=" . urlencode($_GET['order'] ?? 'received_at'
                     <h5 class="modal-title" id="entryModalTitle">Inscription</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
+
                 <div class="modal-body">
-                    <div class="mb-2"><strong>Email :</strong> <span id="m_email"></span></div>
-                    <div class="mb-2"><strong>Course :</strong> <span id="m_race"></span></div>
-                    <div class="mb-2"><strong>Reçu :</strong> <span id="m_received_at"></span></div>
+                    <div class="grid-2">
+                        <div><strong>Email</strong><div id="m_email" class="mono"></div></div>
+                        <div><strong>Birthdate</strong><div id="m_birthdate" class="mono"></div></div>
+
+                        <div><strong>Race</strong><div id="m_race"></div></div>
+                        <div><strong>Club</strong><div id="m_club"></div></div>
+
+                        <div><strong>City</strong><div id="m_city"></div></div>
+                        <div><strong>Licence</strong><div id="m_licence" class="mono"></div></div>
+
+                        <div><strong>Itra</strong><div id="m_itra" class="mono"></div></div>
+                        <div><strong>Received at</strong><div id="m_received_at" class="mono"></div></div>
+                    </div>
 
                     <hr>
 
-                    <div class="mb-3">
-                        <div><strong>Comment :</strong></div>
+                    <div class="grid-2">
+                        <div><strong>Approved</strong><div id="m_approved"></div></div>
+                        <div><strong>Refused</strong><div id="m_refused"></div></div>
+                    </div>
+
+                    <div class="mt-3">
+                        <strong>review_note</strong>
                         <div id="m_review_note" style="white-space:pre-wrap"></div>
                     </div>
 
-                    <div class="mb-3">
-                        <div><strong>Participations :</strong></div>
-                        <div id="m_participations" style="white-space:pre-wrap"></div>
+                    <hr>
+
+                    <div class="mt-3">
+                        <strong>Motivation</strong>
+                        <div id="m_motivation" style="white-space:pre-wrap"></div>
                     </div>
 
-                    <div class="mb-3">
-                        <div><strong>Availability :</strong></div>
-                        <div id="m_availability" style="white-space:pre-wrap"></div>
-                    </div>
-
-                    <div class="mb-3">
-                        <div><strong>Contribution :</strong></div>
+                    <div class="mt-3">
+                        <strong>Contribution</strong>
                         <div id="m_contribution" style="white-space:pre-wrap"></div>
                     </div>
 
-                    <div class="mb-3">
-                        <div><strong>Motivation :</strong></div>
-                        <div id="m_motivation" style="white-space:pre-wrap"></div>
+                    <hr>
+
+                    <div class="grid-2">
+                        <div>
+                            <strong>Raw text → availability keys</strong>
+                            <div id="m_availability_keys"></div>
+                        </div>
+                        <div>
+                            <strong>Raw text → participations keys</strong>
+                            <div id="m_participation_keys"></div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <strong>Source file</strong>
+                        <div id="m_source_file" class="mono"></div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Bootstrap JS (si pas déjà chargé dans le header) -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
+        function esc(s){
+            return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+        }
+        function renderList(keys){
+            if(!keys || !Array.isArray(keys) || keys.length === 0) return '<span class="muted">—</span>';
+            return '<ul class="mini-list">' + keys.map(k => '<li>'+esc(k)+'</li>').join('') + '</ul>';
+        }
+        function boolLabel(v){
+            return (Number(v) === 1) ? '<span class="bool-pill on">OUI</span>' : '<span class="bool-pill off">NON</span>';
+        }
+
         document.addEventListener('click', function(e){
             const a = e.target.closest('a[data-entry]');
             if(!a) return;
+
             const data = JSON.parse(a.getAttribute('data-entry') || '{}');
 
             document.getElementById('entryModalTitle').textContent = data.name || 'Inscription';
+
             document.getElementById('m_email').textContent = data.email || '';
+            document.getElementById('m_birthdate').textContent = data.birthdate || '';
+
             document.getElementById('m_race').textContent = data.race || '';
+            document.getElementById('m_club').textContent = data.club || '';
+            document.getElementById('m_city').textContent = data.city || '';
+            document.getElementById('m_licence').textContent = data.licence || '';
+            document.getElementById('m_itra').textContent = data.itra || '';
             document.getElementById('m_received_at').textContent = data.received_at || '';
 
+            document.getElementById('m_approved').innerHTML = boolLabel(data.approved);
+            document.getElementById('m_refused').innerHTML  = boolLabel(data.refused);
+
             document.getElementById('m_review_note').textContent = data.review_note || '';
-            document.getElementById('m_participations').textContent = data.participations || '';
-            document.getElementById('m_availability').textContent = data.availability || '';
-            document.getElementById('m_contribution').textContent = data.contribution || '';
             document.getElementById('m_motivation').textContent = data.motivation || '';
+            document.getElementById('m_contribution').textContent = data.contribution || '';
+
+            document.getElementById('m_availability_keys').innerHTML = renderList(data.availability_keys);
+            document.getElementById('m_participation_keys').innerHTML = renderList(data.participation_keys);
+
+            document.getElementById('m_source_file').textContent = data.source_file || '';
         });
     </script>
 

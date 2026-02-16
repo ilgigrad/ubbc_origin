@@ -303,8 +303,8 @@ function ubbc_link(string $order, string $asc, string $search, string $showAll, 
                     $participationsVal = $r['participations'];
                     $participations = ($participationsVal === null || $participationsVal === '' || (int)$participationsVal === 0) ? '' : (string)(int)$participationsVal;
                     $review_note    = (string)($r['review_note'] ?? '');
-                    $itra = ubbc_dash_if_zero($itra));
-                    $participations = ubbc_dash_if_zero($participations));
+                    $itra = ubbc_dash_if_zero($itra);
+                    $participations = ubbc_dash_if_zero($participations);
                     $race = ubbc_upper((string)($r['race'] ?? ''));
                     $club = ubbc_title((string)($r['club'] ?? ''));
                     $city = ubbc_title((string)($r['city'] ?? ''));

@@ -42,6 +42,21 @@ services:
     networks:
       - ubbcnet
 
+  phpmyadmin:
+    image: phpmyadmin:latest
+    container_name: ubbc-phpmyadmin
+    restart: unless-stopped
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_ABSOLUTE_URI: https://phpmyadmin.ubbc.fr/
+    depends_on:
+      - db
+    networks:
+      - ubbcnet
+    expose:
+      - "80"
+
 networks:
   ubbcnet:
     name: ubbcnet

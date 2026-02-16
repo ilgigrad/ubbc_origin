@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 // /live/entrylist.php
 require_once __DIR__ . '/../includes/db-only.php';
-require_once __DIR__ . '/../includes/helpers.php';
 
 $link = ubbc_db_connect();
 
@@ -20,18 +19,12 @@ $orderKey = isset($_GET['order']) ? (string)$_GET['order'] : 'received_at';
 $asc = (isset($_GET['asc']) && in_array($_GET['asc'], ['asc', 'desc'], true)) ? $_GET['asc'] : 'desc';
 $dasc = ($asc === 'asc') ? 'desc' : 'asc';
 
-// view:
-// - latest (par défaut) : dernière ligne par email+race
-// - all : tout
-// - duplicates : uniquement doublons (email+race count>1), groupés
 $view = isset($_GET['view']) ? (string)$_GET['view'] : 'latest';
 if (!in_array($view, ['latest','all','duplicates'], true)) $view = 'latest';
 
-// pagination (hors view=all)
 $perPage = 25;
 $page = (isset($_GET['page']) && (int)$_GET['page'] > 0) ? (int)$_GET['page'] : 1;
 
-// tri whitelist
 $allowedOrder = [
     'received_at'    => 'i.received_at',
     'lastname'       => 'i.lastname',
@@ -49,7 +42,6 @@ $allowedOrder = [
 ];
 $order = $allowedOrder[$orderKey] ?? 'i.received_at';
 
-// search filter
 $searchSql = '';
 if ($search !== '') {
     $q = mysqli_real_escape_string($link, $search);
@@ -65,7 +57,6 @@ if ($search !== '') {
     )";
 }
 
-// dataset builder
 $selectCols = "
     i.id, i.source_file, i.email,
     i.lastname, i.firstname, i.birthdate, i.gender,
@@ -99,14 +90,12 @@ if ($view === 'latest') {
         ) d ON d.email = i.email AND d.race = i.race
         WHERE 1=1
     ";
-    // on groupe visuellement: email/race puis dernière date
     $orderSql = " ORDER BY i.email ASC, i.race ASC, i.received_at DESC ";
-} else { // all
+} else {
     $fromSql = "FROM inscriptions i WHERE 1=1";
     $orderSql = " ORDER BY $order $asc, i.received_at DESC ";
 }
 
-// count
 $sqlCount = "SELECT COUNT(*) AS nb $fromSql $searchSql";
 $resCount = mysqli_query($link, $sqlCount);
 $nb = 0;
@@ -132,7 +121,6 @@ if ($view !== 'all') {
 
 $results = mysqli_query($link, $sql);
 
-// link builder
 function link_to(array $p): string {
     $base = [
         'search' => $_GET['search'] ?? '',
@@ -145,9 +133,6 @@ function link_to(array $p): string {
     return '/live/entrylist.php?' . http_build_query($q);
 }
 
-// -------------------------
-// HTML
-// -------------------------
 header('Content-Type: text/html; charset=utf-8');
 ?>
 <!doctype html>
@@ -209,12 +194,15 @@ header('Content-Type: text/html; charset=utf-8');
             Doublons
         </a>
 
-        <div class="muted ms-auto small">
-            Couleurs: approved / pending / refused
+        <div class="ms-auto legend-status">
+            <span class="legend-item legend-approved">approved</span>
+            <span class="legend-sep">/</span>
+            <span class="legend-item legend-pending">pending</span>
+            <span class="legend-sep">/</span>
+            <span class="legend-item legend-refused">refused</span>
         </div>
     </form>
 
-    <!-- DESKTOP TABLE -->
     <section class="live-card live-table-wrap">
         <table class="live-table">
             <thead>
@@ -252,7 +240,6 @@ header('Content-Type: text/html; charset=utf-8');
                     $club      = title_case($r['club'] ?? '');
 
                     $race = upper($r['race'] ?? '');
-
                     $cat = category_from_birthdate($r['birthdate'] ?? null);
 
                     $itra = dash_if_zero($r['itra'] ?? null);
@@ -348,15 +335,26 @@ header('Content-Type: text/html; charset=utf-8');
     <!-- MOBILE CARDS -->
     <section class="entry-cards">
         <?php
-        // Si on a déjà itéré $results pour la table, on doit relancer la requête pour les cards.
-        // On le fait uniquement en mobile via CSS, mais on préfère éviter de dépendre du viewport côté serveur.
-        // Donc on relance ici proprement.
-        if ($results) {
-            mysqli_free_result($results);
-        }
+        if ($results) mysqli_free_result($results);
         $results2 = mysqli_query($link, $sql);
         $cardNumber = ($view !== 'all') ? (($page - 1) * $perPage + 1) : 1;
         ?>
+
+        <div class="card-legend">
+            <div class="card-legend-item">
+                <span class="bool-icon bool-true"></span>
+                <span class="txt">Availability (24-31)</span>
+            </div>
+            <div class="card-legend-item">
+                <span class="bool-icon bool-true"></span>
+                <span class="txt">Approved</span>
+            </div>
+            <div class="card-legend-item">
+                <span class="bool-icon bool-false"></span>
+                <span class="txt">Refused</span>
+            </div>
+            <div class="card-legend-hint muted">pastilles: vert = oui, rouge = non</div>
+        </div>
 
         <?php if (!$results2 || mysqli_num_rows($results2) === 0): ?>
             <div class="card-empty">Pas d'inscription</div>
@@ -412,9 +410,9 @@ header('Content-Type: text/html; charset=utf-8');
                     <div class="entry-card-top">
                         <div class="entry-card-num">#<?php echo (int)$cardNumber++; ?></div>
                         <div class="entry-card-badges">
-                            <span class="badge-dot"><?php echo bool_icon($availability, "dispo 24-31", "pas dispo 24-31"); ?></span>
-                            <span class="badge-dot"><?php echo bool_icon($approved, "approved", "pending"); ?></span>
-                            <span class="badge-dot"><?php echo bool_icon($refused, "refused", "not refused"); ?></span>
+                            <span class="badge-dot"><?php echo bool_icon($availability, "availability 24-31", "availability 24-31"); ?></span>
+                            <span class="badge-dot"><?php echo bool_icon($approved, "approved", "approved"); ?></span>
+                            <span class="badge-dot"><?php echo bool_icon($refused, "refused", "refused"); ?></span>
                         </div>
                     </div>
 
@@ -487,12 +485,7 @@ header('Content-Type: text/html; charset=utf-8');
 
 </main>
 
-<?php
-// Modale extraite
-include __DIR__ . '/entrylist_modal.php';
-
-mysqli_close($link);
-?>
+<?php include __DIR__ . '/entrylist_modal.php'; ?>
 
 <footer class="live-footer"></footer>
 

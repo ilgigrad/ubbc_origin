@@ -270,3 +270,110 @@ body{
     background: rgba(209,49,61,.12);
     color: var(--blood);
 }
+
+/* --- Responsive: table vs mobile cards --- */
+.live-desktop { display: block; }
+.live-mobile  { display: none; }
+
+@media (max-width: 900px){
+    .live-desktop { display: none; }
+    .live-mobile  { display: block; }
+
+    /* on évite tout scroll horizontal */
+    .live-container { padding-left: 12px; padding-right: 12px; }
+}
+
+/* --- Mobile cards --- */
+.mobile-list{
+    display:flex;
+    flex-direction:column;
+    gap: 10px;
+}
+
+.mobile-card{
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: 0 6px 18px rgba(0,0,0,.04);
+    overflow:hidden;
+}
+
+.mobile-head{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+    padding: 12px 12px;
+    border-bottom: 1px solid rgba(0,0,0,.06);
+}
+
+.mobile-num{
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 12px;
+    min-width: 44px;
+    text-align:right;
+}
+
+.mobile-title{
+    flex: 1;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.mobile-title .sep{ color: var(--muted); margin: 0 6px; }
+
+.mobile-icons{
+    display:flex;
+    align-items:center;
+    gap: 10px;
+}
+
+.mobile-body{
+    padding: 12px 12px 14px;
+}
+
+.kv{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    margin-bottom: 10px;
+}
+.kv .k{
+    display:inline-block;
+    min-width: 70px;
+    color: var(--muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+}
+.kv .v{
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.mobile-note{
+    margin-top: 6px;
+}
+.mobile-note .k{
+    display:block;
+    color: var(--muted);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    margin-bottom: 4px;
+}
+.mobile-note .v{
+    display:block;
+    font-size: 14px;
+}
+
+/* statut: pastille pending prune / approved vert / refused rouge */
+.status-dot{
+    display:inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    box-shadow: inset 0 0 0 2px rgba(0,0,0,.10);
+}
+.status-pending{ background: var(--prune); }
+.status-approved{ background: #1bb34b; }
+.status-refused{ background: var(--blood); }

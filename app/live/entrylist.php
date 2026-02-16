@@ -258,7 +258,9 @@ function ubbc_link(string $order, string $asc, string $search, string $showAll, 
             <?php echo (int)$nbusers; ?> entrées
         </div>
     </form>
-
+    <div class="live-mobile">
+        <?php include(__DIR__ . '/entrylist_mobile.php'); ?>
+    </div>
     <div class="live-card">
         <table class="live-table">
             <thead>

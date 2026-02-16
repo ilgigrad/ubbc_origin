@@ -126,7 +126,7 @@ if (!$stmt) {
     exit;
 }
 
-mysqli_stmt_bind_param(
+if (mysqli_stmt_bind_param(
     $stmt,
     "ssssssssississiis",
     $sourceFile,
@@ -146,8 +146,7 @@ mysqli_stmt_bind_param(
     $participations, // i
     $itra,           // i
     $licence
-);
-if (!mysqli_stmt_bind_param($stmt)) {
+)){
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'bind_failed']);
     exit;

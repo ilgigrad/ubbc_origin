@@ -238,7 +238,7 @@ function ubbc_status(string $approved, string $refused): string {
     return 'pending';
 }
 
-function status_class(array $r): string {
+function ubbc_status_class(array $r): string {
     $refused  = (int)($r['refused'] ?? 0);
     $approved = (int)($r['approved'] ?? 0);
     if ($refused === 1) return 'row-refused';

@@ -128,7 +128,7 @@ if (!$stmt) {
 
 mysqli_stmt_bind_param(
     $stmt,
-    "ssssssssississiiis",
+    "ssssssssississiis"
     $sourceFile,
     $email,
     $lastname,

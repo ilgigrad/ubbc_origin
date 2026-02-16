@@ -91,6 +91,8 @@ $availability   = (int) ubbc_available_24_31($data['Disponibilités en juillet']
 
 // itra : on force int (0 si absent)
 $itra = isset($data['Index ITRA / UTMB']) ? (int)$data['Index ITRA / UTMB'] : 0;
+$charterAccepted  = (int)$charterAccepted;
+$itra = (int)$itra;
 
 // Insert / Upsert
 $stmt = mysqli_prepare($link, "

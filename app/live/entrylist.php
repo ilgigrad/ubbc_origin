@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 // /live/entrylist.php
 require_once __DIR__ . '/../includes/db-only.php';
+require_once __DIR__ . '/../includes/helpers.php';
 
 $link = ubbc_db_connect();
 

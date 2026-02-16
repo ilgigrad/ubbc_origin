@@ -1,146 +1,138 @@
 <?php
-// /live/entrylist_modal.php
+// live/entrylist_modal.php
+// Bootstrap 5 modal. Nécessite bootstrap.bundle.js (ou bootstrap JS + Popper) chargé dans le header.
 ?>
+
 <div class="modal fade" id="entryModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">
         <div class="modal-content">
+
             <div class="modal-header">
                 <h5 class="modal-title" id="entryModalTitle">Inscription</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
 
             <div class="modal-body">
-                <div class="grid-2">
-                    <div>
-                        <strong>Email</strong>
-                        <div id="m_email" class="mono"></div>
-                    </div>
-                    <div>
-                        <strong>Birthdate</strong>
-                        <div id="m_birthdate" class="mono"></div>
-                    </div>
-
-                    <div>
-                        <strong>Race</strong>
-                        <div id="m_race"></div>
-                    </div>
-                    <div>
-                        <strong>City</strong>
-                        <div id="m_city"></div>
-                    </div>
-
-                    <div>
-                        <strong>Club</strong>
-                        <div id="m_club"></div>
-                    </div>
-                    <div>
-                        <strong>Licence</strong>
-                        <div id="m_licence" class="mono"></div>
-                    </div>
-
-                    <div>
-                        <strong>Itra</strong>
-                        <div id="m_itra" class="mono"></div>
-                    </div>
-                    <div>
-                        <strong>Received at</strong>
-                        <div id="m_received_at" class="mono"></div>
-                    </div>
+                <div class="modal-grid">
+                    <div><span class="mk">Email</span><span class="mv" id="m_email"></span></div>
+                    <div><span class="mk">Birthdate</span><span class="mv" id="m_birthdate"></span></div>
+                    <div><span class="mk">Source file</span><span class="mv" id="m_source"></span></div>
+                    <div><span class="mk">Received at</span><span class="mv" id="m_received"></span></div>
+                    <div><span class="mk">Approved</span><span class="mv" id="m_approved"></span></div>
+                    <div><span class="mk">Refused</span><span class="mv" id="m_refused"></span></div>
                 </div>
 
                 <hr>
 
-                <div class="grid-2">
-                    <div>
-                        <strong>Approved</strong>
-                        <div id="m_approved"></div>
-                    </div>
-                    <div>
-                        <strong>Refused</strong>
-                        <div id="m_refused"></div>
-                    </div>
+                <div class="modal-block">
+                    <div class="m-title">Motivation</div>
+                    <div class="m-text" id="m_motivation"></div>
                 </div>
 
-                <div class="mt-3">
-                    <strong>review_note</strong>
-                    <div id="m_review_note" style="white-space:pre-wrap"></div>
+                <div class="modal-block">
+                    <div class="m-title">Contribution</div>
+                    <div class="m-text" id="m_contribution"></div>
                 </div>
 
-                <hr>
+                <div class="modal-block">
+                    <div class="m-title">Raw text</div>
 
-                <div class="mt-3">
-                    <strong>Motivation</strong>
-                    <div id="m_motivation" style="white-space:pre-wrap"></div>
+                    <div class="m-subtitle">Availabilities (clés)</div>
+                    <ul class="m-list" id="m_avail_keys"></ul>
+
+                    <div class="m-subtitle">Participations (clés)</div>
+                    <ul class="m-list" id="m_part_keys"></ul>
+
+                    <details class="m-details">
+                        <summary>Afficher le raw_text complet</summary>
+                        <pre class="m-raw" id="m_raw"></pre>
+                    </details>
                 </div>
 
-                <div class="mt-3">
-                    <strong>Contribution</strong>
-                    <div id="m_contribution" style="white-space:pre-wrap"></div>
-                </div>
-
-                <hr>
-
-                <div class="grid-2">
-                    <div>
-                        <strong>Raw text → availability keys</strong>
-                        <div id="m_availability_keys"></div>
-                    </div>
-                    <div>
-                        <strong>Raw text → participations keys</strong>
-                        <div id="m_participation_keys"></div>
-                    </div>
-                </div>
-
-                <div class="mt-3">
-                    <strong>Source file</strong>
-                    <div id="m_source_file" class="mono"></div>
-                </div>
             </div>
+
+            <div class="modal-footer">
+                <button type="button" class="live-btn" data-bs-dismiss="modal">Fermer</button>
+            </div>
+
         </div>
     </div>
 </div>
 
 <script>
-    function esc(s){
-        return String(s ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
-    function renderList(keys){
-        if(!keys || !Array.isArray(keys) || keys.length === 0) return '<span class="muted">—</span>';
-        return '<ul class="mini-list">' + keys.map(k => '<li>'+esc(k)+'</li>').join('') + '</ul>';
-    }
-    function boolLabel(v){
-        return (Number(v) === 1) ? '<span class="bool-pill on">OUI</span>' : '<span class="bool-pill off">NON</span>';
-    }
+    (function () {
+        function byId(id){ return document.getElementById(id); }
 
-    document.addEventListener('click', function(e){
-        const a = e.target.closest('a[data-entry]');
-        if(!a) return;
+        function setText(id, v) {
+            const el = byId(id);
+            if (!el) return;
+            el.textContent = (v === null || v === undefined) ? '' : String(v);
+        }
 
-        const data = JSON.parse(a.getAttribute('data-entry') || '{}');
+        function setBoolText(id, v) {
+            setText(id, (v === 1 || v === true || v === "1") ? 'OUI' : 'NON');
+        }
 
-        document.getElementById('entryModalTitle').textContent = data.name || 'Inscription';
+        function fillList(id, arr) {
+            const ul = byId(id);
+            if (!ul) return;
+            ul.innerHTML = '';
+            if (!arr || !arr.length) {
+                const li = document.createElement('li');
+                li.textContent = '—';
+                ul.appendChild(li);
+                return;
+            }
+            arr.forEach(function(k){
+                const li = document.createElement('li');
+                li.textContent = k;
+                ul.appendChild(li);
+            });
+        }
 
-        document.getElementById('m_email').textContent = data.email || '';
-        document.getElementById('m_birthdate').textContent = data.birthdate || '';
+        function openModal(entry) {
+            setText('entryModalTitle', (entry.lastname || '') + ' ' + (entry.firstname || ''));
 
-        document.getElementById('m_race').textContent = data.race || '';
-        document.getElementById('m_city').textContent = data.city || '';
-        document.getElementById('m_club').textContent = data.club || '';
-        document.getElementById('m_licence').textContent = data.licence || '';
+            setText('m_email', entry.email || '');
+            setText('m_birthdate', entry.birthdate || '');
+            setText('m_source', entry.source_file || '');
+            setText('m_received', entry.received_at || '');
+            setBoolText('m_approved', entry.approved);
+            setBoolText('m_refused', entry.refused);
 
-        document.getElementById('m_itra').textContent = data.itra || '—';
-        document.getElementById('m_received_at').textContent = data.received_at || '';
+            setText('m_motivation', entry.motivation || '');
+            setText('m_contribution', entry.contribution || '');
 
-        document.getElementById('m_approved').innerHTML = boolLabel(data.approved);
-        document.getElementById('m_refused').innerHTML  = boolLabel(data.refused);
+            fillList('m_avail_keys', entry.avail_keys || []);
+            fillList('m_part_keys', entry.part_keys || []);
+            setText('m_raw', entry.raw_text || '');
 
-        document.getElementById('m_review_note').textContent = data.review_note || '';
-        document.getElementById('m_motivation').textContent = data.motivation || '';
-        document.getElementById('m_contribution').textContent = data.contribution || '';
+            const modalEl = document.getElementById('entryModal');
+            if (!modalEl) return;
 
-        document.getElementById('m_availability_keys').innerHTML = renderList(data.availability_keys);
-        document.getElementById('m_participation_keys').innerHTML = renderList(data.participation_keys);
+            if (!window.bootstrap || !bootstrap.Modal) {
+                // Bootstrap JS non chargé -> pas de modal
+                alert("Bootstrap JS n'est pas chargé : impossible d'ouvrir la modale.");
+                return;
+            }
+            const m = bootstrap.Modal.getOrCreateInstance(modalEl);
+            m.show();
+        }
 
-        document.getElementById('m_source_file').textContent = data.source_file || '';
-    });
+        document.addEventListener('click', function(e){
+            const a = e.target.closest('.js-open-entry');
+            if (!a) return;
+            e.preventDefault();
+
+            const json = a.getAttribute('data-entry');
+            if (!json) return;
+
+            try {
+                const entry = JSON.parse(json);
+                openModal(entry);
+            } catch (err) {
+                console.error('Bad modal payload', err);
+            }
+        });
+    })();
 </script>

@@ -1,7 +1,6 @@
 <?php
 declare(strict_types=1);
 
-// live/entrylist.php
 require_once __DIR__ . '/../includes/db-only.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
@@ -21,7 +20,6 @@ $offset  = ($page - 1) * $perPage;
 
 $dir = ($dir === 'asc') ? 'asc' : 'desc';
 
-// whitelist sort
 $sortMap = [
     'received_at'    => 'i.received_at',
     'lastname'       => 'i.lastname',
@@ -68,11 +66,8 @@ $whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
 // ---------------------------
 $sqlCount = "SELECT COUNT(*) AS c FROM inscriptions i {$whereSql}";
 $stmtCount = mysqli_prepare($link, $sqlCount);
-if (!$stmtCount) {
-    http_response_code(500);
-    echo "DB error (prepare count): " . h(mysqli_error($link));
-    exit;
-}
+if (!$stmtCount) { http_response_code(500); echo "DB error: " . h(mysqli_error($link)); exit; }
+
 if ($types !== '') {
     mysqli_stmt_bind_param($stmtCount, $types, ...$params);
 }
@@ -85,7 +80,7 @@ mysqli_stmt_close($stmtCount);
 $totalPages = max(1, (int)ceil($totalRows / $perPage));
 
 // ---------------------------
-// Fetch page
+// Fetch
 // ---------------------------
 $sql = "
 SELECT
@@ -117,13 +112,9 @@ LIMIT ? OFFSET ?
 ";
 
 $stmt = mysqli_prepare($link, $sql);
-if (!$stmt) {
-    http_response_code(500);
-    echo "DB error (prepare list): " . h(mysqli_error($link));
-    exit;
-}
+if (!$stmt) { http_response_code(500); echo "DB error: " . h(mysqli_error($link)); exit; }
 
-$typesList  = $types . 'ii';
+$typesList = $types . 'ii';
 $paramsList = array_merge($params, [$perPage, $offset]);
 mysqli_stmt_bind_param($stmt, $typesList, ...$paramsList);
 
@@ -134,12 +125,11 @@ $rows = [];
 while ($r = mysqli_fetch_assoc($res)) {
     $rows[] = $r;
 }
-
 mysqli_free_result($res);
 mysqli_stmt_close($stmt);
 
 // ---------------------------
-// URL builders
+// URL helpers
 // ---------------------------
 function ubbc_url(array $overrides = []): string {
     $base = [
@@ -149,10 +139,9 @@ function ubbc_url(array $overrides = []): string {
         'dir'  => $_GET['dir']  ?? 'desc',
         'page' => $_GET['page'] ?? 1,
     ];
-    $merged = array_merge($base, $overrides);
-
-    if (($merged['q'] ?? '') === '') unset($merged['q']);
-    return 'entrylist.php?' . http_build_query($merged);
+    $m = array_merge($base, $overrides);
+    if (($m['q'] ?? '') === '') unset($m['q']);
+    return 'entrylist.php?' . http_build_query($m);
 }
 
 function ubbc_sort_link(string $key): string {
@@ -165,9 +154,6 @@ function ubbc_sort_link(string $key): string {
     return ubbc_url(['sort' => $key, 'dir' => $newDir, 'page' => 1]);
 }
 
-// ---------------------------
-// Render
-// ---------------------------
 include __DIR__ . '/header.php';
 ?>
 
@@ -175,59 +161,52 @@ include __DIR__ . '/header.php';
 
         <div class="live-toolbar">
             <form method="get" action="entrylist.php" class="live-toolbar-form">
-                <input type="text"
-                       name="q"
-                       value="<?php echo h($q); ?>"
-                       placeholder="Rechercher (nom, email, club, ville, course)">
+                <input class="live-search" type="text" name="q" value="<?php echo h($q); ?>" placeholder="Recherche : nom, email, club, ville, course">
 
                 <input type="hidden" name="sort" value="<?php echo h($sort); ?>">
                 <input type="hidden" name="dir"  value="<?php echo h($dir); ?>">
 
-                <select name="view" class="form-select live-toolbar-select">
+                <select name="view" class="live-select">
                     <option value="all"      <?php echo ($view==='all')?'selected':''; ?>>Tous</option>
                     <option value="approved" <?php echo ($view==='approved')?'selected':''; ?>>Approved</option>
                     <option value="pending"  <?php echo ($view==='pending')?'selected':''; ?>>Pending</option>
                     <option value="refused"  <?php echo ($view==='refused')?'selected':''; ?>>Refused</option>
                 </select>
 
-                <button class="btn btn-primary" type="submit">Filtrer</button>
-                <a class="btn btn-outline-secondary" href="entrylist.php">Reset</a>
+                <button class="live-btn" type="submit">Filtrer</button>
+                <a class="live-btn live-btn-ghost" href="entrylist.php">Reset</a>
             </form>
 
-            <div class="live-toolbar-count">
-                <?php echo (int)$totalRows; ?> inscriptions
-            </div>
+            <div class="live-count"><?php echo (int)$totalRows; ?> inscriptions</div>
         </div>
 
-        <!-- Légende statut -->
         <div class="status-legend">
-            <span class="status status-approved">approved</span>
-            <span class="status status-pending">pending</span>
-            <span class="status status-refused">refused</span>
+            <span class="status-pill status-approved">approved</span>
+            <span class="status-pill status-pending">pending</span>
+            <span class="status-pill status-refused">refused</span>
         </div>
 
-        <div class="live-card">
-
-            <!-- TABLE (desktop) -->
+        <!-- TABLE DESKTOP -->
+        <div class="only-desktop">
             <div class="live-table-wrap">
                 <table class="live-table">
                     <thead>
                     <tr>
                         <th>#</th>
-                        <th><a class="entry-link" href="<?php echo h(ubbc_sort_link('lastname')); ?>">Nom</a></th>
-                        <th><a class="entry-link" href="<?php echo h(ubbc_sort_link('firstname')); ?>">Prénom</a></th>
+                        <th><a class="th-link" href="<?php echo h(ubbc_sort_link('lastname')); ?>">Nom</a></th>
+                        <th><a class="th-link" href="<?php echo h(ubbc_sort_link('firstname')); ?>">Prénom</a></th>
                         <th>Gender</th>
                         <th>Cat</th>
-                        <th><a class="entry-link" href="<?php echo h(ubbc_sort_link('itra')); ?>">Itra</a></th>
-                        <th><a class="entry-link" href="<?php echo h(ubbc_sort_link('race')); ?>">Race</a></th>
+                        <th><a class="th-link" href="<?php echo h(ubbc_sort_link('itra')); ?>">Itra</a></th>
+                        <th><a class="th-link" href="<?php echo h(ubbc_sort_link('race')); ?>">Race</a></th>
                         <th>Club</th>
                         <th>City</th>
                         <th>Licence</th>
-                        <th><a class="entry-link" href="<?php echo h(ubbc_sort_link('participations')); ?>">Participations</a></th>
+                        <th><a class="th-link" href="<?php echo h(ubbc_sort_link('participations')); ?>">Participations</a></th>
                         <th>Availability</th>
                         <th>review_note</th>
                         <th>Statut</th>
-                        <th><a class="entry-link" href="<?php echo h(ubbc_sort_link('received_at')); ?>">Received at</a></th>
+                        <th><a class="th-link" href="<?php echo h(ubbc_sort_link('received_at')); ?>">Received at</a></th>
                     </tr>
                     </thead>
 
@@ -239,8 +218,8 @@ include __DIR__ . '/header.php';
                         $num = $offset + $i;
 
                         $approved = (string)($r['approved'] ?? '0');
-                        $refused  = (string)($r['refused']  ?? '0');
-                        $status   = ubbc_status($approved, $refused);     // helpers.php
+                        $refused  = (string)($r['refused'] ?? '0');
+                        $status   = ubbc_status($approved, $refused); // helpers.php
                         $rowClass = 'row-' . $status;
 
                         $lastname  = title_case((string)($r['lastname'] ?? ''));
@@ -258,41 +237,35 @@ include __DIR__ . '/header.php';
                         $partsDisplay = ($parts > 0) ? (string)$parts : '';
 
                         $availability = (int)($r['availability'] ?? 0);
-                        $availBadge = $availability ? '<span class="mini-dot mini-dot-on" title="dispo 24-31"></span>'
-                            : '<span class="mini-dot mini-dot-off" title="non dispo"></span>';
 
-                        $note = (string)($r['review_note'] ?? '');
-                        $received = (string)($r['received_at'] ?? '');
-
-                        // Modal payload
                         $raw = (string)($r['raw_text'] ?? '');
-                        $availKeys = extract_json_keys_from_raw($raw, ['Disponibilités en juillet', 'Disponibilites en juillet']);
-                        $partKeys  = extract_json_keys_from_raw($raw, ['Participations UBBC', 'Participations']);
+                        $availKeys = extract_json_keys_from_raw($raw, ['Disponibilités en juillet','Disponibilites en juillet']);
+                        $partKeys  = extract_json_keys_from_raw($raw, ['Participations UBBC','Participations']);
 
                         $entry = [
-                            'id'          => (int)$r['id'],
+                            'id' => (int)$r['id'],
                             'source_file' => (string)($r['source_file'] ?? ''),
-                            'email'       => (string)($r['email'] ?? ''),
-                            'lastname'    => $lastname,
-                            'firstname'   => $firstname,
-                            'birthdate'   => (string)($r['birthdate'] ?? ''),
-                            'gender'      => (string)($r['gender'] ?? ''),
-                            'city'        => $city,
-                            'club'        => $club,
-                            'race'        => $race,
-                            'licence'     => (string)($r['licence'] ?? ''),
+                            'email' => (string)($r['email'] ?? ''),
+                            'lastname' => $lastname,
+                            'firstname' => $firstname,
+                            'birthdate' => (string)($r['birthdate'] ?? ''),
+                            'gender' => (string)($r['gender'] ?? ''),
+                            'city' => $city,
+                            'club' => $club,
+                            'race' => $race,
+                            'licence' => (string)($r['licence'] ?? ''),
                             'participations' => $parts,
-                            'availability'   => $availability,
-                            'itra'        => $itra,
-                            'review_note' => $note,
-                            'approved'    => (int)($r['approved'] ?? 0),
-                            'refused'     => (int)($r['refused'] ?? 0),
-                            'motivation'  => (string)($r['motivation'] ?? ''),
-                            'contribution'=> (string)($r['contribution'] ?? ''),
-                            'received_at' => $received,
-                            'avail_keys'  => $availKeys,
-                            'part_keys'   => $partKeys,
-                            'raw_text'    => $raw,
+                            'availability' => $availability,
+                            'itra' => $itra,
+                            'review_note' => (string)($r['review_note'] ?? ''),
+                            'approved' => (int)($r['approved'] ?? 0),
+                            'refused' => (int)($r['refused'] ?? 0),
+                            'motivation' => (string)($r['motivation'] ?? ''),
+                            'contribution' => (string)($r['contribution'] ?? ''),
+                            'received_at' => (string)($r['received_at'] ?? ''),
+                            'avail_keys' => $availKeys,
+                            'part_keys' => $partKeys,
+                            'raw_text' => $raw,
                         ];
                         ?>
                         <tr class="<?php echo h($rowClass); ?>">
@@ -316,30 +289,40 @@ include __DIR__ . '/header.php';
 
                             <td><?php echo h((string)($r['gender'] ?? '')); ?></td>
                             <td><?php echo h($cat); ?></td>
-                            <td class="col-index"><?php echo h($itraDisplay); ?></td>
+                            <td class="col-center"><?php echo h($itraDisplay); ?></td>
                             <td><?php echo h($race); ?></td>
                             <td><?php echo h($club); ?></td>
                             <td><?php echo h($city); ?></td>
                             <td><?php echo h((string)($r['licence'] ?? '')); ?></td>
                             <td class="col-center"><?php echo h($partsDisplay); ?></td>
-                            <td class="col-center"><?php echo $availBadge; ?></td>
-                            <td><?php echo h($note); ?></td>
-                            <td>
-                                <span class="status status-<?php echo h($status); ?>"><?php echo h($status); ?></span>
+
+                            <td class="col-center">
+                                <span class="dot <?php echo $availability ? 'dot-green' : 'dot-red'; ?>" title="Availability"></span>
                             </td>
-                            <td><?php echo h($received); ?></td>
+
+                            <td><?php echo h((string)($r['review_note'] ?? '')); ?></td>
+
+                            <td class="col-center">
+              <span class="dot
+                <?php echo ($status === 'approved') ? 'dot-green' : (($status === 'pending') ? 'dot-prune' : 'dot-red'); ?>
+              " title="<?php echo h($status); ?>"></span>
+                            </td>
+
+                            <td><?php echo h((string)($r['received_at'] ?? '')); ?></td>
                         </tr>
                     <?php endforeach; ?>
                     </tbody>
                 </table>
             </div>
+        </div>
 
-            <!-- CARDS (mobile) -->
-            <div class="live-cards">
+        <!-- CARDS MOBILE -->
+        <div class="only-mobile">
+            <div class="cards">
                 <?php foreach ($rows as $r):
 
                     $approved = (string)($r['approved'] ?? '0');
-                    $refused  = (string)($r['refused']  ?? '0');
+                    $refused  = (string)($r['refused'] ?? '0');
                     $status   = ubbc_status($approved, $refused);
                     $rowClass = 'row-' . $status;
 
@@ -350,92 +333,80 @@ include __DIR__ . '/header.php';
                     $race      = strtoupper((string)($r['race'] ?? ''));
 
                     $cat = category_from_birthdate((string)($r['birthdate'] ?? ''));
-
                     $itra = (int)($r['itra'] ?? 0);
-                    $itraDisplay = ($itra > 0) ? (string)$itra : '—';
-
                     $parts = (int)($r['participations'] ?? 0);
-                    $partsDisplay = ($parts > 0) ? (string)$parts : '—';
-
                     $availability = (int)($r['availability'] ?? 0);
-                    $availBadge = $availability ? '<span class="mini-dot mini-dot-on" title="dispo 24-31"></span>'
-                        : '<span class="mini-dot mini-dot-off" title="non dispo"></span>';
-
-                    $note = (string)($r['review_note'] ?? '');
-                    $received = (string)($r['received_at'] ?? '');
 
                     $raw = (string)($r['raw_text'] ?? '');
-                    $availKeys = extract_json_keys_from_raw($raw, ['Disponibilités en juillet', 'Disponibilites en juillet']);
-                    $partKeys  = extract_json_keys_from_raw($raw, ['Participations UBBC', 'Participations']);
+                    $availKeys = extract_json_keys_from_raw($raw, ['Disponibilités en juillet','Disponibilites en juillet']);
+                    $partKeys  = extract_json_keys_from_raw($raw, ['Participations UBBC','Participations']);
 
                     $entry = [
-                        'id'          => (int)$r['id'],
+                        'id' => (int)$r['id'],
                         'source_file' => (string)($r['source_file'] ?? ''),
-                        'email'       => (string)($r['email'] ?? ''),
-                        'lastname'    => $lastname,
-                        'firstname'   => $firstname,
-                        'birthdate'   => (string)($r['birthdate'] ?? ''),
-                        'gender'      => (string)($r['gender'] ?? ''),
-                        'city'        => $city,
-                        'club'        => $club,
-                        'race'        => $race,
-                        'licence'     => (string)($r['licence'] ?? ''),
+                        'email' => (string)($r['email'] ?? ''),
+                        'lastname' => $lastname,
+                        'firstname' => $firstname,
+                        'birthdate' => (string)($r['birthdate'] ?? ''),
+                        'gender' => (string)($r['gender'] ?? ''),
+                        'city' => $city,
+                        'club' => $club,
+                        'race' => $race,
+                        'licence' => (string)($r['licence'] ?? ''),
                         'participations' => $parts,
-                        'availability'   => $availability,
-                        'itra'        => $itra,
-                        'review_note' => $note,
-                        'approved'    => (int)($r['approved'] ?? 0),
-                        'refused'     => (int)($r['refused'] ?? 0),
-                        'motivation'  => (string)($r['motivation'] ?? ''),
-                        'contribution'=> (string)($r['contribution'] ?? ''),
-                        'received_at' => $received,
-                        'avail_keys'  => $availKeys,
-                        'part_keys'   => $partKeys,
-                        'raw_text'    => $raw,
+                        'availability' => $availability,
+                        'itra' => $itra,
+                        'review_note' => (string)($r['review_note'] ?? ''),
+                        'approved' => (int)($r['approved'] ?? 0),
+                        'refused' => (int)($r['refused'] ?? 0),
+                        'motivation' => (string)($r['motivation'] ?? ''),
+                        'contribution' => (string)($r['contribution'] ?? ''),
+                        'received_at' => (string)($r['received_at'] ?? ''),
+                        'avail_keys' => $availKeys,
+                        'part_keys' => $partKeys,
+                        'raw_text' => $raw,
                     ];
-                    ?>
-                    <div class="live-card-item <?php echo h($rowClass); ?>">
 
-                        <div class="live-card-top">
-                            <div class="live-card-name">
+                    $statusDotClass = ($status === 'approved') ? 'dot-green' : (($status === 'pending') ? 'dot-prune' : 'dot-red');
+                    ?>
+                    <div class="card-item <?php echo h($rowClass); ?>">
+                        <div class="card-top">
+                            <div class="card-title">
                                 <a href="#"
                                    class="entry-link js-open-entry"
                                    data-entry="<?php echo h(json_encode($entry, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)); ?>">
                                     <?php echo h($lastname . ' ' . $firstname); ?>
                                 </a>
-                                <div class="live-card-sub">
-                                    <?php echo h($race); ?> · <?php echo h($city); ?> · <?php echo h($club); ?>
-                                </div>
+                                <div class="card-sub"><?php echo h($race); ?></div>
                             </div>
 
-                            <div class="live-card-status">
-                                <span class="status status-<?php echo h($status); ?>"><?php echo h($status); ?></span>
+                            <div class="card-dots">
+                                <span class="dot <?php echo $availability ? 'dot-green' : 'dot-red'; ?>" title="Availability"></span>
+                                <span class="dot <?php echo h($statusDotClass); ?>" title="<?php echo h($status); ?>"></span>
                             </div>
                         </div>
 
-                        <div class="live-card-grid">
-                            <div><span class="k">Gender</span><span class="v"><?php echo h((string)($r['gender'] ?? '')); ?></span></div>
+                        <div class="card-grid">
                             <div><span class="k">Cat</span><span class="v"><?php echo h($cat); ?></span></div>
-                            <div><span class="k">Itra</span><span class="v"><?php echo h($itraDisplay); ?></span></div>
-                            <div><span class="k">Parts</span><span class="v"><?php echo h($partsDisplay); ?></span></div>
-                            <div><span class="k">Avail</span><span class="v"><?php echo $availBadge; ?></span></div>
+                            <div><span class="k">Itra</span><span class="v"><?php echo ($itra > 0) ? h((string)$itra) : '—'; ?></span></div>
+                            <div><span class="k">Parts</span><span class="v"><?php echo ($parts > 0) ? h((string)$parts) : '—'; ?></span></div>
+                            <div><span class="k">City</span><span class="v"><?php echo h($city); ?></span></div>
+                            <div><span class="k">Club</span><span class="v"><?php echo h($club); ?></span></div>
                             <div><span class="k">Licence</span><span class="v"><?php echo h((string)($r['licence'] ?? '')); ?></span></div>
                         </div>
 
-                        <?php if ($note !== ''): ?>
-                            <div class="live-card-note"><?php echo h($note); ?></div>
+                        <?php if (!empty($r['review_note'])): ?>
+                            <div class="card-note"><?php echo h((string)$r['review_note']); ?></div>
                         <?php endif; ?>
 
-                        <div class="live-card-foot"><?php echo h($received); ?></div>
+                        <div class="card-foot"><?php echo h((string)($r['received_at'] ?? '')); ?></div>
                     </div>
                 <?php endforeach; ?>
             </div>
-
         </div>
 
-        <!-- Pagination -->
         <?php if ($totalPages > 1): ?>
-            <div class="live-pagination">
+            <div class="pagination">
                 <?php
                 $prev = max(1, $page - 1);
                 $next = min($totalPages, $page + 1);
@@ -444,35 +415,29 @@ include __DIR__ . '/header.php';
                 $start  = max(1, $page - $window);
                 $end    = min($totalPages, $page + $window);
 
-                if ($page > 1) {
-                    echo '<a class="btn btn-outline-primary" href="' . h(ubbc_url(['page' => $prev])) . '">‹</a>';
-                } else {
-                    echo '<span class="current">‹</span>';
-                }
+                $btn = function(string $label, ?string $href, bool $current=false) {
+                    if ($current) return '<span class="p-current">'.$label.'</span>';
+                    if ($href === null) return '<span class="p-disabled">'.$label.'</span>';
+                    return '<a class="p-btn" href="'.h($href).'">'.$label.'</a>';
+                };
+
+                echo $btn('‹', ($page > 1) ? ubbc_url(['page'=>$prev]) : null);
 
                 if ($start > 1) {
-                    echo '<a href="' . h(ubbc_url(['page' => 1])) . '">1</a>';
-                    if ($start > 2) echo '<span>…</span>';
+                    echo $btn('1', ubbc_url(['page'=>1]));
+                    if ($start > 2) echo '<span class="p-ellipsis">…</span>';
                 }
 
-                for ($p = $start; $p <= $end; $p++) {
-                    if ($p === $page) {
-                        echo '<span class="current">' . $p . '</span>';
-                    } else {
-                        echo '<a href="' . h(ubbc_url(['page' => $p])) . '">' . $p . '</a>';
-                    }
+                for ($p=$start; $p<=$end; $p++) {
+                    echo $btn((string)$p, $p===$page ? null : ubbc_url(['page'=>$p]), $p===$page);
                 }
 
                 if ($end < $totalPages) {
-                    if ($end < $totalPages - 1) echo '<span>…</span>';
-                    echo '<a href="' . h(ubbc_url(['page' => $totalPages])) . '">' . $totalPages . '</a>';
+                    if ($end < $totalPages - 1) echo '<span class="p-ellipsis">…</span>';
+                    echo $btn((string)$totalPages, ubbc_url(['page'=>$totalPages]));
                 }
 
-                if ($page < $totalPages) {
-                    echo '<a class="btn btn-outline-primary" href="' . h(ubbc_url(['page' => $next])) . '">›</a>';
-                } else {
-                    echo '<span class="current">›</span>';
-                }
+                echo $btn('›', ($page < $totalPages) ? ubbc_url(['page'=>$next]) : null);
                 ?>
             </div>
         <?php endif; ?>

@@ -322,7 +322,7 @@ function ubbc_link(string $order, string $asc, string $search, string $showAll, 
 
                     $payload = [
                         'firstname' => trim($firstname),
-                        'lastname' => trim($lastname);
+                        'lastname' => trim($lastname),
                         'email' => (string)($r['email'] ?? ''),
                         'birthdate' => (string)($r['birthdate'] ?? ''),
                         'race' => $race,

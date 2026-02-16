@@ -384,3 +384,49 @@ body{
     .live-toolbar input[type="text"]{ min-width: 100%; }
     .legend-status{ width: 100%; justify-content: flex-start; }
 }
+
+.refused-icon{
+    display:inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
+.refused-off{
+    background: transparent;
+    border: 2px solid rgba(0,0,0,.22);
+}
+
+.refused-on{
+    background: var(--blood);
+    border: 2px solid var(--blood);
+}
+
+.status-badge{
+    display:inline-block;
+    padding:4px 10px;
+    border-radius:20px;
+    font-size:12px;
+    font-weight:600;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+}
+
+/* Pending */
+.status-pending{
+    background:#615375;   /* prune */
+    color:#fff;
+}
+
+/* Approved */
+.status-approved{
+    background:#34a9d4;   /* electric */
+    color:#fff;
+}
+
+/* Refused */
+.status-refused{
+    background:#d1313d;   /* blood */
+    color:#fff;
+}

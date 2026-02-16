@@ -236,4 +236,30 @@ function ubbc_compute_approval(array $row): array
         'approved' => $approved,
         'review_note' => $reviewNote,
     ];
+
+}
+
+function refused_icon(int $refused): string {
+    if ($refused === 1) {
+        return '<span class="refused-icon refused-on" title="refused" aria-label="refused"></span>';
+    }
+    return '<span class="refused-icon refused-off" title="not refused" aria-label="not refused"></span>';
+}
+
+function ubbc_status(string $approved, string $refused): string {
+    if ((int)$refused === 1) {
+        return 'refused';
+    }
+    if ((int)$approved === 1) {
+        return 'approved';
+    }
+    return 'pending';
+}
+
+function ubbc_status_badge(string $status): string {
+    return '<span class="status-badge status-' . $status . '">' . ucfirst($status) . '</span>';
+}
+
+function ubbc_status_row_class(string $status): string {
+    return 'row-' . $status;
 }

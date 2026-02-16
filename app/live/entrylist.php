@@ -1,495 +1,482 @@
 <?php
 declare(strict_types=1);
 
-// /live/entrylist.php
+// live/entrylist.php
 require_once __DIR__ . '/../includes/db-only.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
 $link = ubbc_db_connect();
 
-// -------------------------
-// Helpers (local)
-// -------------------------
-
-
-// -------------------------
+// ---------------------------
 // Params
-// -------------------------
-$search = isset($_GET['search']) ? trim((string)$_GET['search']) : '';
-$orderKey = isset($_GET['order']) ? (string)$_GET['order'] : 'received_at';
-$asc = (isset($_GET['asc']) && in_array($_GET['asc'], ['asc', 'desc'], true)) ? $_GET['asc'] : 'desc';
-$dasc = ($asc === 'asc') ? 'desc' : 'asc';
+// ---------------------------
+$q = isset($_GET['q']) ? trim((string)$_GET['q']) : '';
+$view = isset($_GET['view']) ? (string)$_GET['view'] : 'all';        // all | approved | pending | refused
+$sort = isset($_GET['sort']) ? (string)$_GET['sort'] : 'received_at'; // received_at | lastname | firstname | race | itra | participations
+$dir  = isset($_GET['dir']) ? strtolower((string)$_GET['dir']) : 'desc';
+$page = max(1, (int)($_GET['page'] ?? 1));
+$perPage = 50;
+$offset = ($page - 1) * $perPage;
 
-$view = isset($_GET['view']) ? (string)$_GET['view'] : 'latest';
-if (!in_array($view, ['latest','all','duplicates'], true)) $view = 'latest';
+$dir = ($dir === 'asc') ? 'asc' : 'desc';
 
-$perPage = 25;
-$page = (isset($_GET['page']) && (int)$_GET['page'] > 0) ? (int)$_GET['page'] : 1;
-
-$allowedOrder = [
-    'received_at'    => 'i.received_at',
-    'lastname'       => 'i.lastname',
-    'firstname'      => 'i.firstname',
-    'gender'         => 'i.gender',
-    'itra'           => 'i.itra',
-    'race'           => 'i.race',
-    'club'           => 'i.club',
-    'city'           => 'i.city',
-    'licence'        => 'i.licence',
-    'participations' => 'i.participations',
-    'availability'   => 'i.availability',
-    'approved'       => 'i.approved',
-    'refused'        => 'i.refused',
+// whitelist sort
+$sortMap = [
+    'received_at'     => 'i.received_at',
+    'lastname'        => 'i.lastname',
+    'firstname'       => 'i.firstname',
+    'race'            => 'i.race',
+    'itra'            => 'i.itra',
+    'participations'  => 'i.participations',
 ];
-$order = $allowedOrder[$orderKey] ?? 'i.received_at';
+$orderBy = $sortMap[$sort] ?? $sortMap['received_at'];
 
-$searchSql = '';
-if ($search !== '') {
-    $q = mysqli_real_escape_string($link, $search);
-    $searchSql = " AND (
-        i.email LIKE '%$q%' OR
-        i.lastname LIKE '%$q%' OR
-        i.firstname LIKE '%$q%' OR
-        i.club LIKE '%$q%' OR
-        i.city LIKE '%$q%' OR
-        i.race LIKE '%$q%' OR
-        i.licence LIKE '%$q%' OR
-        i.review_note LIKE '%$q%'
-    )";
+// ---------------------------
+// WHERE
+// ---------------------------
+$where = [];
+$params = [];
+$types  = '';
+
+if ($q !== '') {
+    // recherche simple
+    $where[] = "(i.lastname LIKE ? OR i.firstname LIKE ? OR i.email LIKE ? OR i.city LIKE ? OR i.club LIKE ? OR i.race LIKE ?)";
+    $like = '%' . $q . '%';
+    $params = array_merge($params, [$like,$like,$like,$like,$like,$like]);
+    $types .= 'ssssss';
 }
 
-$selectCols = "
-    i.id, i.source_file, i.email,
-    i.lastname, i.firstname, i.birthdate, i.gender,
-    i.city, i.race, i.club, i.licence,
-    i.participations, i.availability, i.itra,
-    i.review_note, i.approved, i.refused,
-    i.contribution, i.motivation, i.raw_text, i.received_at
+switch ($view) {
+    case 'approved':
+        $where[] = "i.refused = 0 AND i.approved = 1";
+        break;
+    case 'refused':
+        $where[] = "i.refused = 1";
+        break;
+    case 'pending':
+        $where[] = "i.refused = 0 AND i.approved = 0";
+        break;
+    default:
+        $view = 'all';
+        break;
+}
+
+$whereSql = $where ? ('WHERE ' . implode(' AND ', $where)) : '';
+
+// ---------------------------
+// Count
+// ---------------------------
+$sqlCount = "SELECT COUNT(*) AS c FROM inscriptions i {$whereSql}";
+$stmtCount = mysqli_prepare($link, $sqlCount);
+if (!$stmtCount) {
+    http_response_code(500);
+    echo "DB error (prepare count): " . h(mysqli_error($link));
+    exit;
+}
+if ($types !== '') {
+    mysqli_stmt_bind_param($stmtCount, $types, ...$params);
+}
+mysqli_stmt_execute($stmtCount);
+$resCount = mysqli_stmt_get_result($stmtCount);
+$totalRows = (int)(mysqli_fetch_assoc($resCount)['c'] ?? 0);
+mysqli_free_result($resCount);
+mysqli_stmt_close($stmtCount);
+
+$totalPages = max(1, (int)ceil($totalRows / $perPage));
+
+// ---------------------------
+// Fetch page
+// ---------------------------
+$sql = "
+SELECT
+  i.id,
+  i.source_file,
+  i.email,
+  i.lastname,
+  i.firstname,
+  i.birthdate,
+  i.gender,
+  i.city,
+  i.race,
+  i.club,
+  i.licence,
+  i.participations,
+  i.availability,
+  i.itra,
+  i.review_note,
+  i.approved,
+  i.refused,
+  i.contribution,
+  i.motivation,
+  i.raw_text,
+  i.received_at
+FROM inscriptions i
+{$whereSql}
+ORDER BY {$orderBy} {$dir}, i.id {$dir}
+LIMIT ? OFFSET ?
 ";
 
-if ($view === 'latest') {
-    $fromSql = "
-        FROM inscriptions i
-        JOIN (
-            SELECT email, race, MAX(received_at) AS mx
-            FROM inscriptions
-            WHERE email IS NOT NULL AND email <> ''
-            GROUP BY email, race
-        ) t ON t.email = i.email AND t.race = i.race AND t.mx = i.received_at
-        WHERE 1=1
-    ";
-    $orderSql = " ORDER BY $order $asc, i.received_at DESC ";
-} elseif ($view === 'duplicates') {
-    $fromSql = "
-        FROM inscriptions i
-        JOIN (
-            SELECT email, race
-            FROM inscriptions
-            WHERE email IS NOT NULL AND email <> ''
-            GROUP BY email, race
-            HAVING COUNT(*) > 1
-        ) d ON d.email = i.email AND d.race = i.race
-        WHERE 1=1
-    ";
-    $orderSql = " ORDER BY i.email ASC, i.race ASC, i.received_at DESC ";
-} else {
-    $fromSql = "FROM inscriptions i WHERE 1=1";
-    $orderSql = " ORDER BY $order $asc, i.received_at DESC ";
+$stmt = mysqli_prepare($link, $sql);
+if (!$stmt) {
+    http_response_code(500);
+    echo "DB error (prepare list): " . h(mysqli_error($link));
+    exit;
 }
 
-$sqlCount = "SELECT COUNT(*) AS nb $fromSql $searchSql";
-$resCount = mysqli_query($link, $sqlCount);
-$nb = 0;
-if ($resCount) {
-    $row = mysqli_fetch_assoc($resCount);
-    $nb = (int)($row['nb'] ?? 0);
-    mysqli_free_result($resCount);
+$typesList = $types . 'ii';
+$paramsList = array_merge($params, [$perPage, $offset]);
+mysqli_stmt_bind_param($stmt, $typesList, ...$paramsList);
+
+mysqli_stmt_execute($stmt);
+$res = mysqli_stmt_get_result($stmt);
+
+$rows = [];
+while ($r = mysqli_fetch_assoc($res)) {
+    $rows[] = $r;
 }
 
-$nbPage = max(1, (int)ceil($nb / $perPage));
-if ($page > $nbPage) $page = $nbPage;
+mysqli_free_result($res);
+mysqli_stmt_close($stmt);
 
-$sql = "SELECT $selectCols $fromSql $searchSql $orderSql";
-
-$rowNumber = 1;
-if ($view !== 'all') {
-    $offset = ($page - 1) * $perPage;
-    $sql .= " LIMIT $offset, $perPage";
-    $rowNumber = $offset + 1;
-} else {
-    $sql .= " LIMIT 100000";
+// ---------------------------
+// Helpers local (status)
+// on s'appuie sur ton CSS existant (row-approved / row-pending / row-refused)
+// ---------------------------
+function ubbc_status(array $r): string {
+    if ((int)($r['refused'] ?? 0) === 1) return 'refused';
+    if ((int)($r['approved'] ?? 0) === 1) return 'approved';
+    return 'pending';
+}
+function ubbc_row_class(array $r): string {
+    return 'row-' . ubbc_status($r);
+}
+function ubbc_status_badge(array $r): string {
+    $st = ubbc_status($r);
+    // .status + .status-approved/.status-pending/.status-refused existent déjà dans ton CSS
+    return '<span class="status status-' . $st . '">' . $st . '</span>';
 }
 
-$results = mysqli_query($link, $sql);
-
-function link_to(array $p): string {
+// ---------------------------
+// URL builder
+// ---------------------------
+function ubbc_url(array $overrides = []): string {
     $base = [
-        'search' => $_GET['search'] ?? '',
-        'order'  => $_GET['order'] ?? 'received_at',
-        'asc'    => $_GET['asc'] ?? 'desc',
-        'view'   => $_GET['view'] ?? 'latest',
-        'page'   => $_GET['page'] ?? 1,
+        'q'    => $_GET['q']    ?? '',
+        'view' => $_GET['view'] ?? 'all',
+        'sort' => $_GET['sort'] ?? 'received_at',
+        'dir'  => $_GET['dir']  ?? 'desc',
+        'page' => $_GET['page'] ?? 1,
     ];
-    $q = array_merge($base, $p);
-    return '/live/entrylist.php?' . http_build_query($q);
+    $merged = array_merge($base, $overrides);
+    // clean
+    if (($merged['q'] ?? '') === '') unset($merged['q']);
+    return 'entrylist.php?' . http_build_query($merged);
 }
 
-header('Content-Type: text/html; charset=utf-8');
+function ubbc_sort_link(string $key): string {
+    $currentSort = (string)($_GET['sort'] ?? 'received_at');
+    $currentDir  = strtolower((string)($_GET['dir'] ?? 'desc'));
+    $newDir = 'asc';
+    if ($currentSort === $key) {
+        $newDir = ($currentDir === 'asc') ? 'desc' : 'asc';
+    }
+    return ubbc_url(['sort' => $key, 'dir' => $newDir, 'page' => 1]);
+}
+
+// ---------------------------
+// Render
+// ---------------------------
+include __DIR__ . '/header.php';
 ?>
-<!doctype html>
-<html lang="fr">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width,initial-scale=1">
-    <title>UBBC Live • Entrylist</title>
 
-    <link rel="icon" href="/static/images/icon-reboot.png">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/css/live.css" rel="stylesheet">
-</head>
-<body>
+    <div class="live-container">
 
-<header class="live-header">
-    <div class="brand">
-        <img src="/static/images/icon-reboot.png" alt="UBBC">
-        <div>
-            <div class="title">UBBC • Entrylist</div>
-            <div class="subtitle">
-                <span class="pill pill-prune"><?php echo h($view); ?></span>
-                <span class="muted ms-2"><?php echo (int)$nb; ?> entrées</span>
+        <div class="live-toolbar">
+            <form method="get" action="entrylist.php" style="display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                <input type="text" name="q" value="<?php echo h($q); ?>" placeholder="Rechercher (nom, email, club, ville, course)">
+                <input type="hidden" name="sort" value="<?php echo h($sort); ?>">
+                <input type="hidden" name="dir" value="<?php echo h($dir); ?>">
+
+                <select name="view" class="form-select" style="max-width:220px;">
+                    <option value="all" <?php echo ($view==='all')?'selected':''; ?>>Tous</option>
+                    <option value="approved" <?php echo ($view==='approved')?'selected':''; ?>>Approved</option>
+                    <option value="pending" <?php echo ($view==='pending')?'selected':''; ?>>Pending</option>
+                    <option value="refused" <?php echo ($view==='refused')?'selected':''; ?>>Refused</option>
+                </select>
+
+                <button class="btn btn-primary" type="submit">Filtrer</button>
+                <a class="btn btn-outline-secondary" href="entrylist.php">Reset</a>
+            </form>
+
+            <div style="margin-left:auto; font-size:14px; color:#6b7280;">
+                <?php echo (int)$totalRows; ?> inscriptions
             </div>
         </div>
-    </div>
 
-    <nav class="nav-simple">
-        <a class="nav-link-simple" href="/live/entrylist.php">Entrylist</a>
-    </nav>
-</header>
-
-<main class="live-container">
-
-    <form class="live-toolbar" method="GET" action="/live/entrylist.php">
-        <input type="text" name="search" value="<?php echo h($search); ?>" placeholder="nom, email, club, ville, licence, note...">
-
-        <input type="hidden" name="order" value="<?php echo h($orderKey); ?>">
-        <input type="hidden" name="asc" value="<?php echo h($asc); ?>">
-        <input type="hidden" name="view" value="<?php echo h($view); ?>">
-        <input type="hidden" name="page" value="1">
-
-        <button class="btn btn-sm btn-electric" type="submit">Rechercher</button>
-
-        <div class="toolbar-split"></div>
-
-        <a class="btn btn-sm <?php echo ($view==='latest')?'btn-prune':'btn-outline-prune'; ?>"
-           href="<?php echo h(link_to(['view'=>'latest','page'=>1])); ?>">
-            Dernière soumission
-        </a>
-
-        <a class="btn btn-sm <?php echo ($view==='all')?'btn-prune':'btn-outline-prune'; ?>"
-           href="<?php echo h(link_to(['view'=>'all','page'=>1])); ?>">
-            Tout
-        </a>
-
-        <a class="btn btn-sm <?php echo ($view==='duplicates')?'btn-peach':'btn-outline-peach'; ?>"
-           href="<?php echo h(link_to(['view'=>'duplicates','page'=>1])); ?>">
-            Doublons
-        </a>
-
-        <div class="ms-auto legend-status">
-            <span class="legend-item legend-approved">approved</span>
-            <span class="legend-sep">/</span>
-            <span class="legend-item legend-pending">pending</span>
-            <span class="legend-sep">/</span>
-            <span class="legend-item legend-refused">refused</span>
+        <!-- Légende statut -->
+        <div style="display:flex; gap:12px; flex-wrap:wrap; margin: 0 0 10px; align-items:center;">
+            <span class="status status-approved">approved</span>
+            <span class="status status-pending">pending</span>
+            <span class="status status-refused">refused</span>
         </div>
-    </form>
 
-    <section class="live-card live-table-wrap">
-        <table class="live-table">
-            <thead>
-            <tr>
-                <th class="col-num">#</th>
-                <th class="col-name"><a href="<?php echo h(link_to(['order'=>'lastname','asc'=>$dasc,'page'=>1])); ?>">Nom</a></th>
-                <th class="col-first"><a href="<?php echo h(link_to(['order'=>'firstname','asc'=>$dasc,'page'=>1])); ?>">Prénom</a></th>
-                <th class="col-g"><a href="<?php echo h(link_to(['order'=>'gender','asc'=>$dasc,'page'=>1])); ?>">Gender</a></th>
-                <th class="col-cat">Cat</th>
-                <th class="col-itra"><a href="<?php echo h(link_to(['order'=>'itra','asc'=>$dasc,'page'=>1])); ?>">Itra</a></th>
-                <th class="col-race"><a href="<?php echo h(link_to(['order'=>'race','asc'=>$dasc,'page'=>1])); ?>">Race</a></th>
-                <th class="col-club"><a href="<?php echo h(link_to(['order'=>'club','asc'=>$dasc,'page'=>1])); ?>">Club</a></th>
-                <th class="col-city"><a href="<?php echo h(link_to(['order'=>'city','asc'=>$dasc,'page'=>1])); ?>">City</a></th>
-                <th class="col-lic"><a href="<?php echo h(link_to(['order'=>'licence','asc'=>$dasc,'page'=>1])); ?>">Licence</a></th>
-                <th class="col-part"><a href="<?php echo h(link_to(['order'=>'participations','asc'=>$dasc,'page'=>1])); ?>">Participations</a></th>
-                <th class="col-av"><a href="<?php echo h(link_to(['order'=>'availability','asc'=>$dasc,'page'=>1])); ?>">Availability</a></th>
-                <th class="col-note">review_note</th>
-                <th class="col-appr"><a href="<?php echo h(link_to(['order'=>'approved','asc'=>$dasc,'page'=>1])); ?>">approved</a></th>
-                <th class="col-ref"><a href="<?php echo h(link_to(['order'=>'refused','asc'=>$dasc,'page'=>1])); ?>">refused</a></th>
-                <th class="col-rec"><a href="<?php echo h(link_to(['order'=>'received_at','asc'=>$dasc,'page'=>1])); ?>">Received at</a></th>
-            </tr>
-            </thead>
+        <div class="live-card">
 
-            <tbody>
-            <?php if (!$results || mysqli_num_rows($results) === 0): ?>
-                <tr><td colspan="16" class="empty">Pas d'inscription</td></tr>
-            <?php else: ?>
-                <?php while ($r = mysqli_fetch_assoc($results)): ?>
+            <!-- TABLE (desktop) -->
+            <div class="live-table-wrap">
+                <table class="live-table">
+                    <thead>
+                    <tr>
+                        <th>#</th>
+                        <th><a class="entry-link" href="<?php echo h(ubbc_sort_link('lastname')); ?>">Nom</a></th>
+                        <th><a class="entry-link" href="<?php echo h(ubbc_sort_link('firstname')); ?>">Prénom</a></th>
+                        <th>Gender</th>
+                        <th class="cat">Cat</th>
+                        <th class="col-index"><a class="entry-link" href="<?php echo h(ubbc_sort_link('itra')); ?>">Itra</a></th>
+                        <th><a class="entry-link" href="<?php echo h(ubbc_sort_link('race')); ?>">Race</a></th>
+                        <th>Club</th>
+                        <th>City</th>
+                        <th>Licence</th>
+                        <th><a class="entry-link" href="<?php echo h(ubbc_sort_link('participations')); ?>">Participations</a></th>
+                        <th>Availability</th>
+                        <th>review_note</th>
+                        <th>Statut</th>
+                        <th>Received at</th>
+                    </tr>
+                    </thead>
+                    <tbody>
                     <?php
-                    $rowClass = status_class($r);
+                    $i = 0;
+                    foreach ($rows as $r):
+                        $i++;
+                        $num = $offset + $i;
 
-                    $lastname  = title_case($r['lastname'] ?? '');
-                    $firstname = title_case($r['firstname'] ?? '');
-                    $city      = title_case($r['city'] ?? '');
-                    $club      = title_case($r['club'] ?? '');
+                        $status = ubbc_status($r);
+                        $rowClass = ubbc_row_class($r);
 
-                    $race = upper($r['race'] ?? '');
-                    $cat = category_from_birthdate($r['birthdate'] ?? null);
+                        $lastname  = title_case((string)($r['lastname'] ?? ''));
+                        $firstname = title_case((string)($r['firstname'] ?? ''));
+                        $city      = title_case((string)($r['city'] ?? ''));
+                        $club      = title_case((string)($r['club'] ?? ''));
 
-                    $itra = dash_if_zero($r['itra'] ?? null);
-                    $parts = dash_if_zero($r['participations'] ?? null);
+                        $race = strtoupper((string)($r['race'] ?? ''));
+                        $cat = category_from_birthdate((string)($r['birthdate'] ?? ''));
+                        $itra = (int)($r['itra'] ?? 0);
+                        $itraDisplay = ($itra > 0) ? (string)$itra : '';
 
+                        $parts = (int)($r['participations'] ?? 0);
+                        $partsDisplay = ($parts > 0) ? (string)$parts : '';
+
+                        $availability = (int)($r['availability'] ?? 0); // 0/1
+                        $availabilityIcon = $availability ? '🟢' : '🔴'; // si tu veux remplacer par CSS, on le fera ensuite
+
+                        $note = (string)($r['review_note'] ?? '');
+                        $received = (string)($r['received_at'] ?? '');
+
+                        // Modal data
+                        $raw = (string)($r['raw_text'] ?? '');
+                        $availKeys = extract_json_keys_from_raw($raw, ['Disponibilités en juillet', 'Disponibilites en juillet']);
+                        $partKeys  = extract_json_keys_from_raw($raw, ['Participations UBBC', 'Participations']);
+
+                        $entry = [
+                            'id' => (int)$r['id'],
+                            'source_file' => (string)($r['source_file'] ?? ''),
+                            'email' => (string)($r['email'] ?? ''),
+                            'lastname' => $lastname,
+                            'firstname' => $firstname,
+                            'birthdate' => (string)($r['birthdate'] ?? ''),
+                            'gender' => (string)($r['gender'] ?? ''),
+                            'city' => $city,
+                            'club' => $club,
+                            'race' => $race,
+                            'licence' => (string)($r['licence'] ?? ''),
+                            'participations' => $parts,
+                            'availability' => $availability,
+                            'itra' => $itra,
+                            'review_note' => $note,
+                            'approved' => (int)($r['approved'] ?? 0),
+                            'refused' => (int)($r['refused'] ?? 0),
+                            'motivation' => (string)($r['motivation'] ?? ''),
+                            'contribution' => (string)($r['contribution'] ?? ''),
+                            'received_at' => $received,
+                            'avail_keys' => $availKeys,
+                            'part_keys' => $partKeys,
+                            'raw_text' => $raw,
+                        ];
+                        ?>
+                        <tr class="<?php echo h($rowClass); ?>">
+                            <td><?php echo (int)$num; ?></td>
+
+                            <td>
+                                <a href="#"
+                                   class="entry-link js-open-entry"
+                                   data-entry="<?php echo h(json_encode($entry, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)); ?>">
+                                    <?php echo h($lastname); ?>
+                                </a>
+                            </td>
+
+                            <td>
+                                <a href="#"
+                                   class="entry-link js-open-entry"
+                                   data-entry="<?php echo h(json_encode($entry, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)); ?>">
+                                    <?php echo h($firstname); ?>
+                                </a>
+                            </td>
+
+                            <td><?php echo h((string)($r['gender'] ?? '')); ?></td>
+                            <td class="cat"><?php echo h($cat); ?></td>
+                            <td class="col-index"><?php echo h($itraDisplay); ?></td>
+                            <td><?php echo h($race); ?></td>
+                            <td><?php echo h($club); ?></td>
+                            <td><?php echo h($city); ?></td>
+                            <td><?php echo h((string)($r['licence'] ?? '')); ?></td>
+                            <td style="text-align:center;"><?php echo h($partsDisplay); ?></td>
+                            <td style="text-align:center;"><?php echo $availabilityIcon; ?></td>
+                            <td><?php echo h($note); ?></td>
+                            <td><?php echo ubbc_status_badge($r); ?></td>
+                            <td><?php echo h($received); ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- CARDS (mobile) -->
+            <div class="live-cards">
+                <?php foreach ($rows as $r):
+                    $status = ubbc_status($r);
+                    $rowClass = ubbc_row_class($r);
+
+                    $lastname  = title_case((string)($r['lastname'] ?? ''));
+                    $firstname = title_case((string)($r['firstname'] ?? ''));
+                    $city      = title_case((string)($r['city'] ?? ''));
+                    $club      = title_case((string)($r['club'] ?? ''));
+                    $race      = strtoupper((string)($r['race'] ?? ''));
+
+                    $cat = category_from_birthdate((string)($r['birthdate'] ?? ''));
+                    $itra = (int)($r['itra'] ?? 0);
+                    $itraDisplay = ($itra > 0) ? (string)$itra : '';
+                    $parts = (int)($r['participations'] ?? 0);
+                    $partsDisplay = ($parts > 0) ? (string)$parts : '';
                     $availability = (int)($r['availability'] ?? 0);
-                    $approved     = (int)($r['approved'] ?? 0);
-                    $refused      = (int)($r['refused'] ?? 0);
+                    $availabilityIcon = $availability ? '🟢' : '🔴';
 
-                    $reviewNote = (string)($r['review_note'] ?? '');
+                    $note = (string)($r['review_note'] ?? '');
+                    $received = (string)($r['received_at'] ?? '');
+                    $raw = (string)($r['raw_text'] ?? '');
+                    $availKeys = extract_json_keys_from_raw($raw, ['Disponibilités en juillet', 'Disponibilites en juillet']);
+                    $partKeys  = extract_json_keys_from_raw($raw, ['Participations UBBC', 'Participations']);
 
-                    $rawText = (string)($r['raw_text'] ?? '');
-                    $availabilityKeys = extract_json_keys_from_raw($rawText, ["Disponibilités en juillet","Disponibilites en juillet"]);
-                    $participationKeys = extract_json_keys_from_raw($rawText, ["Participations UBBC","Participations"]);
-
-                    $payload = [
-                        'name' => trim($firstname.' '.$lastname),
-                        'email' => (string)($r['email'] ?? ''),
-                        'birthdate' => (string)($r['birthdate'] ?? ''),
-                        'race' => $race,
-                        'club' => $club,
-                        'city' => $city,
-                        'licence' => (string)($r['licence'] ?? ''),
-                        'itra' => ($itra === '—') ? '' : $itra,
-                        'participations' => ($parts === '—') ? '' : $parts,
-                        'received_at' => (string)($r['received_at'] ?? ''),
+                    $entry = [
+                        'id' => (int)$r['id'],
                         'source_file' => (string)($r['source_file'] ?? ''),
-                        'approved' => $approved,
-                        'refused' => $refused,
+                        'email' => (string)($r['email'] ?? ''),
+                        'lastname' => $lastname,
+                        'firstname' => $firstname,
+                        'birthdate' => (string)($r['birthdate'] ?? ''),
+                        'gender' => (string)($r['gender'] ?? ''),
+                        'city' => $city,
+                        'club' => $club,
+                        'race' => $race,
+                        'licence' => (string)($r['licence'] ?? ''),
+                        'participations' => $parts,
                         'availability' => $availability,
-                        'review_note' => $reviewNote,
+                        'itra' => $itra,
+                        'review_note' => $note,
+                        'approved' => (int)($r['approved'] ?? 0),
+                        'refused' => (int)($r['refused'] ?? 0),
                         'motivation' => (string)($r['motivation'] ?? ''),
                         'contribution' => (string)($r['contribution'] ?? ''),
-                        'availability_keys' => $availabilityKeys,
-                        'participation_keys' => $participationKeys,
+                        'received_at' => $received,
+                        'avail_keys' => $availKeys,
+                        'part_keys' => $partKeys,
+                        'raw_text' => $raw,
                     ];
-                    $dataEntry = htmlspecialchars(json_encode($payload, JSON_UNESCAPED_UNICODE), ENT_QUOTES | ENT_HTML5, 'UTF-8');
                     ?>
+                    <div class="live-card-item <?php echo h($rowClass); ?>">
+                        <div class="live-card-top">
+                            <div class="live-card-name">
+                                <a href="#"
+                                   class="entry-link js-open-entry"
+                                   data-entry="<?php echo h(json_encode($entry, JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES)); ?>">
+                                    <?php echo h($lastname . ' ' . $firstname); ?>
+                                </a>
+                                <div class="live-card-sub">
+                                    <?php echo h($race); ?> · <?php echo h($city); ?> · <?php echo h($club); ?>
+                                </div>
+                            </div>
+                            <div class="live-card-status">
+                                <?php echo ubbc_status_badge($r); ?>
+                            </div>
+                        </div>
 
-                    <tr class="<?php echo h($rowClass); ?>">
-                        <td class="col-num"><?php echo (int)$rowNumber++; ?></td>
+                        <div class="live-card-grid">
+                            <div><span class="k">Gender</span><span class="v"><?php echo h((string)($r['gender'] ?? '')); ?></span></div>
+                            <div><span class="k">Cat</span><span class="v"><?php echo h($cat); ?></span></div>
+                            <div><span class="k">Itra</span><span class="v"><?php echo h($itraDisplay); ?></span></div>
+                            <div><span class="k">Parts</span><span class="v"><?php echo h($partsDisplay); ?></span></div>
+                            <div><span class="k">Avail</span><span class="v"><?php echo $availabilityIcon; ?></span></div>
+                            <div><span class="k">Licence</span><span class="v"><?php echo h((string)($r['licence'] ?? '')); ?></span></div>
+                        </div>
 
-                        <td class="col-name">
-                            <a class="entry-link" href="#"
-                               data-bs-toggle="modal" data-bs-target="#entryModal"
-                               data-entry="<?php echo $dataEntry; ?>"
-                               onclick="return false;">
-                                <?php echo h($lastname); ?>
-                            </a>
-                        </td>
+                        <?php if ($note !== ''): ?>
+                            <div class="live-card-note"><?php echo h($note); ?></div>
+                        <?php endif; ?>
 
-                        <td class="col-first">
-                            <a class="entry-link" href="#"
-                               data-bs-toggle="modal" data-bs-target="#entryModal"
-                               data-entry="<?php echo $dataEntry; ?>"
-                               onclick="return false;">
-                                <?php echo h($firstname); ?>
-                            </a>
-                        </td>
-
-                        <td class="col-g"><?php echo h((string)($r['gender'] ?? '')); ?></td>
-                        <td class="col-cat"><?php echo h($cat); ?></td>
-                        <td class="col-itra"><?php echo h($itra); ?></td>
-                        <td class="col-race"><?php echo h($race); ?></td>
-                        <td class="col-club"><?php echo h($club); ?></td>
-                        <td class="col-city"><?php echo h($city); ?></td>
-                        <td class="col-lic"><?php echo h((string)($r['licence'] ?? '')); ?></td>
-                        <td class="col-part"><?php echo h($parts); ?></td>
-
-                        <td class="col-av">
-                            <?php echo bool_icon($availability, "dispo 24-31", "pas dispo 24-31"); ?>
-                        </td>
-
-                        <td class="col-note"><?php echo h($reviewNote); ?></td>
-
-                        <td class="col-appr">
-                            <?php echo bool_icon($approved, "approved", "pending"); ?>
-                        </td>
-
-                        <td class="col-ref">
-                            <?php echo bool_icon($refused, "refused", "not refused"); ?>
-                        </td>
-
-                        <td class="col-rec"><?php echo h((string)($r['received_at'] ?? '')); ?></td>
-                    </tr>
-
-                <?php endwhile; ?>
-            <?php endif; ?>
-            </tbody>
-        </table>
-    </section>
-
-    <!-- MOBILE CARDS -->
-    <section class="entry-cards">
-        <?php
-        if ($results) mysqli_free_result($results);
-        $results2 = mysqli_query($link, $sql);
-        $cardNumber = ($view !== 'all') ? (($page - 1) * $perPage + 1) : 1;
-        ?>
-
-        <div class="card-legend">
-            <div class="card-legend-item">
-                <span class="bool-icon bool-true"></span>
-                <span class="txt">Availability (24-31)</span>
+                        <div class="live-card-foot"><?php echo h($received); ?></div>
+                    </div>
+                <?php endforeach; ?>
             </div>
-            <div class="card-legend-item">
-                <span class="bool-icon bool-true"></span>
-                <span class="txt">Approved</span>
-            </div>
-            <div class="card-legend-item">
-                <span class="bool-icon bool-false"></span>
-                <span class="txt">Refused</span>
-            </div>
-            <div class="card-legend-hint muted">pastilles: vert = oui, rouge = non</div>
+
         </div>
 
-        <?php if (!$results2 || mysqli_num_rows($results2) === 0): ?>
-            <div class="card-empty">Pas d'inscription</div>
-        <?php else: ?>
-            <?php while ($r = mysqli_fetch_assoc($results2)): ?>
+        <!-- Pagination -->
+        <?php if ($totalPages > 1): ?>
+            <div class="live-pagination">
                 <?php
-                $rowClass = status_class($r);
+                $prev = max(1, $page - 1);
+                $next = min($totalPages, $page + 1);
 
-                $lastname  = title_case($r['lastname'] ?? '');
-                $firstname = title_case($r['firstname'] ?? '');
-                $city      = title_case($r['city'] ?? '');
-                $club      = title_case($r['club'] ?? '');
-                $race      = upper($r['race'] ?? '');
-                $cat       = category_from_birthdate($r['birthdate'] ?? null);
+                $window = 3;
+                $start = max(1, $page - $window);
+                $end   = min($totalPages, $page + $window);
 
-                $itra = dash_if_zero($r['itra'] ?? null);
-                $parts = dash_if_zero($r['participations'] ?? null);
+                if ($page > 1) {
+                    echo '<a class="btn btn-outline-primary" href="' . h(ubbc_url(['page' => $prev])) . '">‹</a>';
+                } else {
+                    echo '<span class="current">‹</span>';
+                }
 
-                $availability = (int)($r['availability'] ?? 0);
-                $approved     = (int)($r['approved'] ?? 0);
-                $refused      = (int)($r['refused'] ?? 0);
-                $reviewNote   = (string)($r['review_note'] ?? '');
+                if ($start > 1) {
+                    echo '<a href="' . h(ubbc_url(['page' => 1])) . '">1</a>';
+                    if ($start > 2) echo '<span>…</span>';
+                }
 
-                $rawText = (string)($r['raw_text'] ?? '');
-                $availabilityKeys = extract_json_keys_from_raw($rawText, ["Disponibilités en juillet","Disponibilites en juillet"]);
-                $participationKeys = extract_json_keys_from_raw($rawText, ["Participations UBBC","Participations"]);
+                for ($p = $start; $p <= $end; $p++) {
+                    if ($p === $page) {
+                        echo '<span class="current">' . $p . '</span>';
+                    } else {
+                        echo '<a href="' . h(ubbc_url(['page' => $p])) . '">' . $p . '</a>';
+                    }
+                }
 
-                $payload = [
-                    'name' => trim($firstname.' '.$lastname),
-                    'email' => (string)($r['email'] ?? ''),
-                    'birthdate' => (string)($r['birthdate'] ?? ''),
-                    'race' => $race,
-                    'club' => $club,
-                    'city' => $city,
-                    'licence' => (string)($r['licence'] ?? ''),
-                    'itra' => ($itra === '—') ? '' : $itra,
-                    'participations' => ($parts === '—') ? '' : $parts,
-                    'received_at' => (string)($r['received_at'] ?? ''),
-                    'source_file' => (string)($r['source_file'] ?? ''),
-                    'approved' => $approved,
-                    'refused' => $refused,
-                    'availability' => $availability,
-                    'review_note' => $reviewNote,
-                    'motivation' => (string)($r['motivation'] ?? ''),
-                    'contribution' => (string)($r['contribution'] ?? ''),
-                    'availability_keys' => $availabilityKeys,
-                    'participation_keys' => $participationKeys,
-                ];
-                $dataEntry = htmlspecialchars(json_encode($payload, JSON_UNESCAPED_UNICODE), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+                if ($end < $totalPages) {
+                    if ($end < $totalPages - 1) echo '<span>…</span>';
+                    echo '<a href="' . h(ubbc_url(['page' => $totalPages])) . '">' . $totalPages . '</a>';
+                }
+
+                if ($page < $totalPages) {
+                    echo '<a class="btn btn-outline-primary" href="' . h(ubbc_url(['page' => $next])) . '">›</a>';
+                } else {
+                    echo '<span class="current">›</span>';
+                }
                 ?>
-
-                <article class="entry-card <?php echo h($rowClass); ?>">
-                    <div class="entry-card-top">
-                        <div class="entry-card-num">#<?php echo (int)$cardNumber++; ?></div>
-                        <div class="entry-card-badges">
-                            <span class="badge-dot"><?php echo bool_icon($availability, "availability 24-31", "availability 24-31"); ?></span>
-                            <span class="badge-dot"><?php echo bool_icon($approved, "approved", "approved"); ?></span>
-                            <span class="badge-dot"><?php echo bool_icon($refused, "refused", "refused"); ?></span>
-                        </div>
-                    </div>
-
-                    <div class="entry-card-name">
-                        <a class="entry-link" href="#"
-                           data-bs-toggle="modal" data-bs-target="#entryModal"
-                           data-entry="<?php echo $dataEntry; ?>"
-                           onclick="return false;">
-                            <?php echo h($firstname.' '.$lastname); ?>
-                        </a>
-                    </div>
-
-                    <div class="entry-card-grid">
-                        <div><span class="k">Race</span><span class="v"><?php echo h($race ?: '—'); ?></span></div>
-                        <div><span class="k">Cat</span><span class="v"><?php echo h($cat); ?></span></div>
-                        <div><span class="k">Itra</span><span class="v"><?php echo h($itra); ?></span></div>
-                        <div><span class="k">Parts</span><span class="v"><?php echo h($parts); ?></span></div>
-                        <div><span class="k">City</span><span class="v"><?php echo h($city ?: '—'); ?></span></div>
-                        <div><span class="k">Club</span><span class="v"><?php echo h($club ?: '—'); ?></span></div>
-                        <div class="span-2"><span class="k">Licence</span><span class="v mono"><?php echo h((string)($r['licence'] ?? '—')); ?></span></div>
-                        <div class="span-2"><span class="k">Received</span><span class="v mono"><?php echo h((string)($r['received_at'] ?? '')); ?></span></div>
-                        <div class="span-2"><span class="k">Note</span><span class="v"><?php echo h($reviewNote ?: '—'); ?></span></div>
-                    </div>
-                </article>
-
-            <?php endwhile; ?>
+            </div>
         <?php endif; ?>
 
-        <?php if ($results2) mysqli_free_result($results2); ?>
-    </section>
+    </div>
 
-    <?php if ($nbPage > 1 && $view !== 'all'): ?>
-        <nav class="live-pagination" aria-label="Pagination">
-            <?php
-            $mk = function(int $p) use ($search, $orderKey, $asc, $view): string {
-                return '/live/entrylist.php?' . http_build_query([
-                        'search' => $search,
-                        'order' => $orderKey,
-                        'asc' => $asc,
-                        'view' => $view,
-                        'page' => $p
-                    ]);
-            };
-
-            $start = max(1, $page - 2);
-            $end   = min($nbPage, $page + 2);
-            if ($page <= 3) { $start = 1; $end = min(5, $nbPage); }
-            if ($page >= $nbPage - 2) { $start = max(1, $nbPage - 4); $end = $nbPage; }
-            ?>
-
-            <a class="page-btn <?php echo ($page <= 1) ? 'disabled' : ''; ?>" href="<?php echo ($page <= 1) ? '#' : h($mk(1)); ?>">«</a>
-            <a class="page-btn <?php echo ($page <= 1) ? 'disabled' : ''; ?>" href="<?php echo ($page <= 1) ? '#' : h($mk($page-1)); ?>">‹</a>
-
-            <?php if ($start > 1): ?><span class="page-ellipsis">…</span><?php endif; ?>
-
-            <?php for ($i = $start; $i <= $end; $i++): ?>
-                <?php if ($i === $page): ?>
-                    <span class="page-btn current"><?php echo $i; ?></span>
-                <?php else: ?>
-                    <a class="page-btn" href="<?php echo h($mk($i)); ?>"><?php echo $i; ?></a>
-                <?php endif; ?>
-            <?php endfor; ?>
-
-            <?php if ($end < $nbPage): ?><span class="page-ellipsis">…</span><?php endif; ?>
-
-            <a class="page-btn <?php echo ($page >= $nbPage) ? 'disabled' : ''; ?>" href="<?php echo ($page >= $nbPage) ? '#' : h($mk($page+1)); ?>">›</a>
-            <a class="page-btn <?php echo ($page >= $nbPage) ? 'disabled' : ''; ?>" href="<?php echo ($page >= $nbPage) ? '#' : h($mk($nbPage)); ?>">»</a>
-        </nav>
-    <?php endif; ?>
-
-</main>
-
-<?php include __DIR__ . '/entrylist_modal.php'; ?>
-
-<footer class="live-footer"></footer>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+<?php
+// modal + JS
+include __DIR__ . '/entrylist_modal.php';
+include __DIR__ . '/footer.php';

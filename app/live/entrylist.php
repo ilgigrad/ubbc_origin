@@ -327,7 +327,10 @@ include __DIR__ . '/header.php';
             <!-- CARDS (mobile) -->
             <div class="live-cards">
                 <?php foreach ($rows as $r):
-                    $status = ubbc_status($r);
+                    $status = ubbc_status(
+                        (int)($r['approved'] ?? 0),
+                        (int)($r['refused'] ?? 0)
+                    );
                     $rowClass = ubbc_row_class($r);
 
                     $lastname  = title_case((string)($r['lastname'] ?? ''));

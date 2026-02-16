@@ -128,7 +128,7 @@ function category_from_birthdate(?string $birthdate): string {
     return '—';
 }
 
-}
+
 
 /**
  * Extraction des clés JSON depuis raw_text:

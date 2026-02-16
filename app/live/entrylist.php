@@ -7,45 +7,7 @@ require_once __DIR__ . '/../includes/helpers.php';
 
 $link = ubbc_db_connect();
 
-/**
- * Utils locaux (pas dans helpers pour éviter collisions)
- */
-function live_h($s): string {
-    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
-function live_title(?string $s): string {
-    $s = trim((string)$s);
-    if ($s === '') return '';
-    $s = mb_strtolower($s, 'UTF-8');
-    return mb_convert_case($s, MB_CASE_TITLE, 'UTF-8');
-}
-function live_upper(?string $s): string {
-    $s = trim((string)$s);
-    if ($s === '') return '';
-    return mb_strtoupper($s, 'UTF-8');
-}
-function live_status(array $r): string {
-    $refused  = (int)($r['refused'] ?? 0);
-    $approved = (int)($r['approved'] ?? 0);
-    if ($refused === 1) return 'refused';
-    if ($approved === 1) return 'approved';
-    return 'pending';
-}
-function live_row_class(array $r): string {
-    $s = live_status($r);
-    if ($s === 'refused') return 'row-refused';
-    if ($s === 'approved') return 'row-approved';
-    return 'row-pending';
-}
-function live_dot(string $kind, int $v, string $titleTrue, string $titleFalse): string {
-    // kind: 'avail' | 'status' (status v ignored, we use $v only for avail)
-    if ($kind === 'avail') {
-        return ($v === 1)
-            ? '<span class="dot dot-green" title="'.live_h($titleTrue).'" aria-label="'.live_h($titleTrue).'"></span>'
-            : '<span class="dot dot-red" title="'.live_h($titleFalse).'" aria-label="'.live_h($titleFalse).'"></span>';
-    }
-    return '<span class="dot dot-prune" aria-hidden="true"></span>';
-}
+
 function live_status_dot(string $status): string {
     if ($status === 'approved') return '<span class="dot dot-green" title="approved" aria-label="approved"></span>';
     if ($status === 'refused')  return '<span class="dot dot-red" title="refused" aria-label="refused"></span>';
@@ -247,11 +209,6 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
             <div class="muted ms-auto"><?php echo (int)$nbusers; ?> entrées</div>
         </form>
 
-        <div class="status-legend">
-            <span class="legend-item"><span class="dot dot-green"></span> <span class="legend-approved">approved</span></span>
-            <span class="legend-item"><span class="dot dot-prune"></span> <span class="legend-pending">pending</span></span>
-            <span class="legend-item"><span class="dot dot-red"></span> <span class="legend-refused">refused</span></span>
-        </div>
 
         <?php
         // Mobile cards (fichier séparé)

@@ -85,6 +85,8 @@ if ($birthdate === '' || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) {
     $birthdate = null;
 }
 
+$cat = category_from_birthdate($birthdate);
+
 // Champs calculés depuis raw_text
 $participations = (int) ubbc_participations_count($data['Participations UBBC'] ?? null);
 $availability   = (int) ubbc_available_24_31($data['Disponibilités en juillet'] ?? null);
@@ -99,11 +101,11 @@ $stmt = mysqli_prepare($link, "
     INSERT INTO inscriptions
       (source_file, email, lastname, firstname, birthdate, gender, city, race,
        availability, contribution, motivation, charte, raw_text,
-       club, participations, itra, licence)
+       club, participations, itra, licence,cat)
     VALUES
       (?, ?, ?, ?, ?, ?, ?, ?,
        ?, ?, ?, ?, ?,
-       ?, ?, ?, ?)
+       ?, ?, ?, ?,?)
     ON DUPLICATE KEY UPDATE
       lastname=VALUES(lastname),
       firstname=VALUES(firstname),
@@ -119,7 +121,8 @@ $stmt = mysqli_prepare($link, "
       participations=VALUES(participations),
       itra=VALUES(itra),
       licence=VALUES(licence),
-      received_at=CURRENT_TIMESTAMP
+      received_at=CURRENT_TIMESTAMP,
+      cat = VALUES(cat),
 ");
 
 if (!$stmt) {
@@ -130,7 +133,7 @@ if (!$stmt) {
 
 if (!mysqli_stmt_bind_param(
     $stmt,
-    "ssssssssississiis",
+    "ssssssssississiiss",
     $sourceFile,
     $email,
     $lastname,
@@ -147,7 +150,8 @@ if (!mysqli_stmt_bind_param(
     $club,
     $participations,
     $itra,
-    $licence
+    $licence,
+    $cat
 )) {
     http_response_code(500);
     echo json_encode([

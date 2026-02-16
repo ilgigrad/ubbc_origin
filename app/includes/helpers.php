@@ -67,117 +67,38 @@ function ubbc_available_24_31($raw): int
  * IMPORTANT: on "recalcule" la note auto, on ne concatène pas indéfiniment.
  */
 
-function h(?string $s): string {
-    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-}
-
-function title_case(?string $s): string {
-    $s = trim((string)$s);
-    if ($s === '') return '';
-    $s = mb_strtolower($s, 'UTF-8');
-    return mb_convert_case($s, MB_CASE_TITLE, 'UTF-8');
-}
-
-function upper(?string $s): string {
-    $s = trim((string)$s);
-    return $s === '' ? '' : mb_strtoupper($s, 'UTF-8');
-}
-
-function dash_if_zero($v): string {
-    if ($v === null) return '—';
-    if ($v === '') return '—';
-    $n = (int)$v;
-    return ($n <= 0) ? '—' : (string)$n;
-}
-
-function season_year(?int $nowTs = null): int {
-    $ts = $nowTs ?? time();
-    $m = (int)date('n', $ts);
-    $y = (int)date('Y', $ts);
-    // Entre septembre et décembre, saison = année en cours +1
-    // Entre janvier et aout, saison = année en cours
-    return ($m >= 9) ? ($y + 1) : $y;
-}
-
 function category_from_birthdate(?string $birthdate): string {
-    if (!$birthdate) return '—';
-    if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) return '—';
-    $y = (int)substr($birthdate, 0, 4);
-    if ($y <= 0) return '—';
-
-    $age = season_year() - $y;
-
-    // Jeunes
-    if ($age >= 13 && $age <= 14) return 'MI';
-    if ($age >= 15 && $age <= 16) return 'CA';
-    if ($age >= 17 && $age <= 18) return 'JU';
-    if ($age >= 19 && $age <= 22) return 'ES';
-    if ($age >= 23 && $age <= 34) return 'SE';
-
-    // Masters
-    if ($age >= 35 && $age <= 39) return 'M0';
-    if ($age >= 40 && $age <= 44) return 'M1';
-    if ($age >= 45 && $age <= 49) return 'M2';
-    if ($age >= 50 && $age <= 54) return 'M3';
-    if ($age >= 55 && $age <= 59) return 'M4';
-    if ($age >= 60 && $age <= 64) return 'M5';
-    if ($age >= 65 && $age <= 69) return 'M6';
-    if ($age >= 70 && $age <= 74) return 'M7';
-    if ($age >= 75 && $age <= 79) return 'M8';
-
-    return '—';
-}
-
-
-
-/**
- * Extraction des clés JSON depuis raw_text:
- * - on repère la ligne "Label: { ... }"
- * - decode entités HTML
- * - json_decode => keys
- */
-function extract_json_keys_from_raw(string $raw, array $labelCandidates): array {
-    $raw = html_entity_decode($raw, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-    $raw = str_replace(["’","‘"], "'", $raw);
-
-    foreach ($labelCandidates as $label) {
-        $pattern = '/^'.preg_quote($label, '/').'\s*:\s*(.+)$/mi';
-        if (!preg_match($pattern, $raw, $m)) continue;
-
-        $value = trim($m[1]);
-
-        // tenter de récupérer un JSON object complet dans la valeur
-        $start = strpos($value, '{');
-        $end   = strrpos($value, '}');
-        if ($start !== false && $end !== false && $end > $start) {
-            $value = substr($value, $start, $end - $start + 1);
-        }
-
-        $value = html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8');
-        $json = json_decode($value, true);
-        if (is_array($json)) return array_keys($json);
-        return [];
+    if (!$birthdate || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) {
+        return null;
     }
 
-    return [];
-}
+    $yearBirth = (int)substr($birthdate, 0, 4);
 
-function ubbc_title(?string $s): string {
-    $s = trim((string)$s);
-    if ($s === '') return '';
-    $s = mb_strtolower($s, 'UTF-8');
-    return mb_convert_case($s, MB_CASE_TITLE, 'UTF-8');
-}
+    $yearNow  = (int)date('Y');
+    $monthNow = (int)date('n');
 
-function ubbc_upper(?string $s): string {
-    $s = trim((string)$s);
-    return $s === '' ? '' : mb_strtoupper($s, 'UTF-8');
-}
+    // Saison
+    $season = ($monthNow >= 9) ? $yearNow + 1 : $yearNow;
 
-function ubbc_dash_if_zero($v): string {
-    if ($v === null) return '—';
-    $n = (int)$v;
-    return ($n <= 0) ? '—' : (string)$n;
+    $age = $season - $yearBirth;
+
+    if ($age < 13) return 'XX';
+    if ($age <= 14) return 'MI';
+    if ($age <= 16) return 'CA';
+    if ($age <= 18) return 'JU';
+    if ($age <= 22) return 'ES';
+    if ($age <= 34) return 'SE';
+    if ($age <= 39) return 'M0';
+    if ($age <= 44) return 'M1';
+    if ($age <= 49) return 'M2';
+    if ($age <= 54) return 'M3';
+    if ($age <= 59) return 'M4';
+    if ($age <= 64) return 'M5';
+    if ($age <= 69) return 'M6';
+    if ($age <= 74) return 'M7';
+    if ($age <= 79) return 'M8';
+
+    return 'XX';
 }
 
 function ubbc_compute_approval(array $row): array
@@ -227,26 +148,30 @@ function ubbc_compute_approval(array $row): array
 
 }
 
-
-function ubbc_status(string $approved, string $refused): string {
-    if ((int)$refused === 1) {
-        return 'refused';
-    }
-    if ((int)$approved === 1) {
-        return 'approved';
-    }
-    return 'pending';
+function live_h($s): string {
+    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 }
-
-function ubbc_status_class(array $r): string {
+function live_title(?string $s): string {
+    $s = trim((string)$s);
+    if ($s === '') return '';
+    $s = mb_strtolower($s, 'UTF-8');
+    return mb_convert_case($s, MB_CASE_TITLE, 'UTF-8');
+}
+function live_upper(?string $s): string {
+    $s = trim((string)$s);
+    if ($s === '') return '';
+    return mb_strtoupper($s, 'UTF-8');
+}
+function live_status(array $r): string {
     $refused  = (int)($r['refused'] ?? 0);
     $approved = (int)($r['approved'] ?? 0);
-    if ($refused === 1) return 'row-refused';
-    if ($approved === 1) return 'row-approved';
-    return 'row-pending';
+    if ($refused === 1) return 'refused';
+    if ($approved === 1) return 'approved';
+    return 'pending';
 }
-
-
-function ubbc_h(?string $s): string {
-    return htmlspecialchars((string)$s, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+function live_row_class(array $r): string {
+    $s = live_status($r);
+    if ($s === 'refused') return 'row-refused';
+    if ($s === 'approved') return 'row-approved';
+    return 'row-pending';
 }

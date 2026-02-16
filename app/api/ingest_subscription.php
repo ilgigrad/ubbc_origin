@@ -128,35 +128,45 @@ if (!$stmt) {
     exit;
 }
 
-if (mysqli_stmt_bind_param(
+if (!mysqli_stmt_bind_param(
     $stmt,
     "ssssssssississiis",
     $sourceFile,
     $email,
     $lastname,
     $firstname,
-    $birthdate,     // peut être null
+    $birthdate,
     $gender,
     $city,
     $race,
-    $availability,  // i
+    $availability,
     $contribution,
     $motivation,
-    $charterAccepted, // i
+    $charterAccepted,
     $raw,
     $club,
-    $participations, // i
-    $itra,           // i
+    $participations,
+    $itra,
     $licence
-)){
+)) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'bind_failed']);
+    echo json_encode([
+        'ok' => false,
+        'error' => 'bind_failed',
+        'stmt_error' => mysqli_stmt_error($stmt),
+        'link_error' => mysqli_error($link),
+    ]);
     exit;
 }
 
 if (!mysqli_stmt_execute($stmt)) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'insert_failed', 'detail' => mysqli_error($link)]);
+    echo json_encode([
+        'ok' => false,
+        'error' => 'insert_failed',
+        'stmt_error' => mysqli_stmt_error($stmt),
+        'link_error' => mysqli_error($link),
+    ]);
     exit;
 }
 mysqli_stmt_close($stmt);

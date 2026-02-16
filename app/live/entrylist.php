@@ -432,7 +432,7 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
                 <a class="page-btn <?php echo ($cpage >= $nbpage) ? 'disabled' : ''; ?>" href="<?php echo ($cpage >= $nbpage) ? '#' : $mk($nbpage); ?>">»</a>
             </nav>
         <?php endif; ?>
-
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
         <?php include(__DIR__ . '/entrylist_modal.php'); ?>
 
     </div>

@@ -72,8 +72,8 @@
                             <div class="muted">#<?php echo (int)$n++; ?></div>
                             <a class="entry-link" href="#"
                                data-bs-toggle="modal" data-bs-target="#entryModal"
-                               data-entry="<?php echo $dataEntry; ?>"
-                               onclick="return false;"><?php echo live_h($lastname . ' ' . $firstname); ?></a>
+                               data-entry="<?php echo $dataEntry; ?>">
+                               <?php echo live_h($lastname . ' ' . $firstname); ?></a>
                             <div class="mobile-dots">
                                 <?php echo live_status_dot($status); ?>
                                 <?php echo ($availability === 1)

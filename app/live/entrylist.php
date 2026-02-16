@@ -364,8 +364,7 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
                             <td class="col-first">
                                 <a class="entry-link" href="#"
                                    data-bs-toggle="modal" data-bs-target="#entryModal"
-                                   data-entry="<?php echo $dataEntry; ?>"
-                                   onclick="return false;">
+                                   data-entry="<?php echo $dataEntry; ?>">
                                     <?php echo live_h($firstname); ?>
                                 </a>
                             </td>

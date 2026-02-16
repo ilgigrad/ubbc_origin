@@ -430,3 +430,14 @@ body{
     background:#d1313d;   /* blood */
     color:#fff;
 }
+
+.mini-dot{
+    display:inline-block;
+    width:12px;
+    height:12px;
+    border-radius:50%;
+    vertical-align:middle;
+}
+.mini-dot-on{ background: #34a9d4; }   /* electric */
+.mini-dot-off{ border:2px solid #615375; background: transparent; } /* prune */
+.col-center{ text-align:center; }

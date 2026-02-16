@@ -234,7 +234,10 @@ include __DIR__ . '/header.php';
                         $i++;
                         $num = $offset + $i;
 
-                        $status = ubbc_status($r);
+                        $status = ubbc_status(
+                            (string)($r['approved'] ?? '0'),
+                            (string)($r['refused'] ?? '0')
+                        );
                         $rowClass = ubbc_row_class($r);
 
                         $lastname  = title_case((string)($r['lastname'] ?? ''));

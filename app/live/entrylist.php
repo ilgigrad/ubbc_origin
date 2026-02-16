@@ -138,23 +138,6 @@ while ($r = mysqli_fetch_assoc($res)) {
 mysqli_free_result($res);
 mysqli_stmt_close($stmt);
 
-// ---------------------------
-// Helpers local (status)
-// on s'appuie sur ton CSS existant (row-approved / row-pending / row-refused)
-// ---------------------------
-function ubbc_status(array $r): string {
-    if ((int)($r['refused'] ?? 0) === 1) return 'refused';
-    if ((int)($r['approved'] ?? 0) === 1) return 'approved';
-    return 'pending';
-}
-function ubbc_row_class(array $r): string {
-    return 'row-' . ubbc_status($r);
-}
-function ubbc_status_badge(array $r): string {
-    $st = ubbc_status($r);
-    // .status + .status-approved/.status-pending/.status-refused existent déjà dans ton CSS
-    return '<span class="status status-' . $st . '">' . $st . '</span>';
-}
 
 // ---------------------------
 // URL builder

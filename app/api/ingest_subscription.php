@@ -147,6 +147,11 @@ mysqli_stmt_bind_param(
     $itra,           // i
     $licence
 );
+if (!mysqli_stmt_bind_param($stmt)) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'bind_failed']);
+    exit;
+}
 
 if (!mysqli_stmt_execute($stmt)) {
     http_response_code(500);

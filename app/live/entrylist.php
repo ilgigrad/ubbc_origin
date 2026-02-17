@@ -189,9 +189,7 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
 
             <input type="hidden" name="showAll" value="<?php echo live_h($showAll); ?>">
             <input type="hidden" name="dedupe" value="<?php echo live_h($dedupe); ?>">
-
-            <select name="order" class="mobile-sort" onchange="this.form.submit()">
-
+            
             <div class="mobile-only">
                 <select name="order" class="mobile-sort" onchange="this.form.submit()">
                     <option value="received_at" <?= $orderKey==='received_at'?'selected':'' ?>>Date</option>

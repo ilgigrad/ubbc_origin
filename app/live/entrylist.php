@@ -192,21 +192,22 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
 
             <select name="order" class="mobile-sort" onchange="this.form.submit()">
 
-            <select name="order" class="mobile-sort" onchange="this.form.submit()">
-                <option value="received_at" <?= $orderKey==='received_at'?'selected':'' ?>>Date</option>
-                <option value="lastname" <?= $orderKey==='lastname'?'selected':'' ?>>Nom</option>
-                <option value="firstname" <?= $orderKey==='firstname'?'selected':'' ?>>Prénom</option>
-                <option value="gender" <?= $orderKey==='gender'?'selected':'' ?>>Genre</option>
-                <option value="cat" <?= $orderKey==='cat'?'selected':'' ?>>Cat</option>
-                <option value="itra" <?= $orderKey==='itra'?'selected':'' ?>>ITRA</option>
-                <option value="race" <?= $orderKey==='race'?'selected':'' ?>>Race</option>
-                <option value="club" <?= $orderKey==='club'?'selected':'' ?>>Club</option>
-                <option value="city" <?= $orderKey==='city'?'selected':'' ?>>Ville</option>
-                <option value="participations" <?= $orderKey==='participations'?'selected':'' ?>>Participations</option>
-                <option value="availability" <?= $orderKey==='availability'?'selected':'' ?>>Disponibilité</option>
-                <option value="approved" <?= $orderKey==='approved'?'selected':'' ?>>Statut</option>
-            </select>
-
+            <div class="mobile-only">
+                <select name="order" class="mobile-sort" onchange="this.form.submit()">
+                    <option value="received_at" <?= $orderKey==='received_at'?'selected':'' ?>>Date</option>
+                    <option value="lastname" <?= $orderKey==='lastname'?'selected':'' ?>>Nom</option>
+                    <option value="firstname" <?= $orderKey==='firstname'?'selected':'' ?>>Prénom</option>
+                    <option value="gender" <?= $orderKey==='gender'?'selected':'' ?>>Genre</option>
+                    <option value="cat" <?= $orderKey==='cat'?'selected':'' ?>>Cat</option>
+                    <option value="itra" <?= $orderKey==='itra'?'selected':'' ?>>ITRA</option>
+                    <option value="race" <?= $orderKey==='race'?'selected':'' ?>>Race</option>
+                    <option value="club" <?= $orderKey==='club'?'selected':'' ?>>Club</option>
+                    <option value="city" <?= $orderKey==='city'?'selected':'' ?>>Ville</option>
+                    <option value="participations" <?= $orderKey==='participations'?'selected':'' ?>>Participations</option>
+                    <option value="availability" <?= $orderKey==='availability'?'selected':'' ?>>Disponibilité</option>
+                    <option value="approved" <?= $orderKey==='approved'?'selected':'' ?>>Statut</option>
+                </select>
+            </div>
             <select name="asc" class="mobile-sort" onchange="this.form.submit()">
                 <option value="asc" <?= $asc==='asc'?'selected':'' ?>>↑ Croissant</option>
                 <option value="desc" <?= $asc==='desc'?'selected':'' ?>>↓ Décroissant</option>

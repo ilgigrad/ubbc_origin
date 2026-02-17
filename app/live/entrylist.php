@@ -57,6 +57,7 @@ $allowedOrder = [
     'firstname'      => 'i.firstname',
     'gender'         => 'i.gender',
     'cat'            => 'i.cat',
+    'country'        => 'i.country',
     'itra'           => 'i.itra',
     'race'           => 'i.race',
     'club'           => 'i.club',
@@ -89,7 +90,8 @@ if ($searchQuery !== '') {
         i.city LIKE '%$q%' OR
         i.race LIKE '%$q%' OR
         i.licence LIKE '%$q%' OR
-        i.review_note LIKE '%$q%'
+        i.review_note LIKE '%$q%' OR
+        i.country LIKE '%$q%' 
     )";
 }
 
@@ -105,6 +107,7 @@ $selectCols = "
     i.birthdate,
     i.gender,
     i.cat,
+    i.country,
     i.city,
     i.race,
     i.club,
@@ -181,6 +184,7 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
                     <option value="itra" <?= $orderKey==='itra'?'selected':'' ?>>ITRA</option>
                     <option value="race" <?= $orderKey==='race'?'selected':'' ?>>Race</option>
                     <option value="club" <?= $orderKey==='club'?'selected':'' ?>>Club</option>
+                    <option value="country" <?= $orderKey==='country'?'selected':'' ?>>Nationalité</option>
                     <option value="city" <?= $orderKey==='city'?'selected':'' ?>>Ville</option>
                     <option value="participations" <?= $orderKey==='participations'?'selected':'' ?>>Participations</option>
                     <option value="availability" <?= $orderKey==='availability'?'selected':'' ?>>Disponibilité</option>
@@ -240,6 +244,7 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
                     <th class="col-first"><a href="<?php echo live_link('firstname', $dasc, $searchQuery, $showAll, 1); ?>">Prénom</a></th>
                     <th class="col-g"><a href="<?php echo live_link('gender', $dasc, $searchQuery, $showAll, 1); ?>">Gender</a></th>
                     <th class="col-cat"><a href="<?php echo live_link('cat', $dasc, $searchQuery, $showAll, 1); ?>">Cat</a></th>
+                    <th class="col-country"><a href="<?php echo live_link('country', $dasc, $searchQuery, $showAll, 1); ?>">Country</a></th>
                     <th class="col-itra"><a href="<?php echo live_link('itra', $dasc, $searchQuery, $showAll, 1); ?>">Itra</a></th>
                     <th class="col-club"><a href="<?php echo live_link('club', $dasc, $searchQuery, $showAll, 1); ?>">Club</a></th>
                     <th class="col-city"><a href="<?php echo live_link('city', $dasc, $searchQuery, $showAll, 1); ?>">City</a></th>
@@ -271,6 +276,7 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
                         $race = live_upper((string)($r['race'] ?? ''));
                         $club = live_title((string)($r['club'] ?? ''));
                         $city = live_title((string)($r['city'] ?? ''));
+                        $country = live_title((string)($r['country'] ?? ''));
 
                         $licence = (string)($r['licence'] ?? '');
 
@@ -297,6 +303,8 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
                             'race' => $race,
                             'club' => $club,
                             'city' => $city,
+                            'country' => $country,
+                            'cat' => $cat,
                             'licence' => $licence,
                             'itra' => $itra,
                             'received_at' => (string)($r['received_at'] ?? ''),
@@ -333,7 +341,8 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
                             </td>
 
                             <td class="col-g"><?php echo live_h($gender); ?></td>
-                            <td class="col-cat"><?php echo live_h($cat !== '' ? $cat : '—'); ?></td>
+                            <td class="col-cat"><?php echo live_h($cat); ?></td>
+                            <td class="col-country"><?php echo live_h($country); ?></td>
                             <td class="col-itra"><?php echo live_h($itra); ?></td>
                             <td class="col-race"><?php echo live_h($race); ?></td>
                             <td class="col-club"><?php echo live_h($club); ?></td>

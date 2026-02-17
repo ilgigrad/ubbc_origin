@@ -187,10 +187,30 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
         <form class="live-toolbar" method="GET" action="/live/entrylist.php">
             <input type="text" name="search" value="<?php echo live_h($searchQuery); ?>" placeholder="nom, email, club, ville, licence, note...">
 
-            <input type="hidden" name="order" value="<?php echo live_h($orderKey); ?>">
-            <input type="hidden" name="asc" value="<?php echo live_h($asc); ?>">
             <input type="hidden" name="showAll" value="<?php echo live_h($showAll); ?>">
             <input type="hidden" name="dedupe" value="<?php echo live_h($dedupe); ?>">
+
+            <select name="order" class="mobile-sort" onchange="this.form.submit()">
+
+            <select name="order" class="mobile-sort" onchange="this.form.submit()">
+                <option value="received_at" <?= $orderKey==='received_at'?'selected':'' ?>>Date</option>
+                <option value="lastname" <?= $orderKey==='lastname'?'selected':'' ?>>Nom</option>
+                <option value="firstname" <?= $orderKey==='firstname'?'selected':'' ?>>Prénom</option>
+                <option value="gender" <?= $orderKey==='gender'?'selected':'' ?>>Genre</option>
+                <option value="cat" <?= $orderKey==='cat'?'selected':'' ?>>Cat</option>
+                <option value="itra" <?= $orderKey==='itra'?'selected':'' ?>>ITRA</option>
+                <option value="race" <?= $orderKey==='race'?'selected':'' ?>>Race</option>
+                <option value="club" <?= $orderKey==='club'?'selected':'' ?>>Club</option>
+                <option value="city" <?= $orderKey==='city'?'selected':'' ?>>Ville</option>
+                <option value="participations" <?= $orderKey==='participations'?'selected':'' ?>>Participations</option>
+                <option value="availability" <?= $orderKey==='availability'?'selected':'' ?>>Disponibilité</option>
+                <option value="approved" <?= $orderKey==='approved'?'selected':'' ?>>Statut</option>
+            </select>
+
+            <select name="asc" class="mobile-sort" onchange="this.form.submit()">
+                <option value="asc" <?= $asc==='asc'?'selected':'' ?>>↑ Croissant</option>
+                <option value="desc" <?= $asc==='desc'?'selected':'' ?>>↓ Décroissant</option>
+            </select>
 
             <button class="btn btn-sm btn-electric" type="submit">Rechercher</button>
 

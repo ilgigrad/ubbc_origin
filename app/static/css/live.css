@@ -331,3 +331,22 @@ body{
     align-items:center;
     margin-top: 2px;
 }
+
+.mobile-sort{
+    display:none;
+    padding:6px 8px;
+    border:1px solid var(--border);
+    border-radius:8px;
+    background:#fff;
+    font-size:13px;
+}
+
+@media (max-width: 900px){
+
+    .live-table{ display:none; }
+
+    .mobile-sort{
+        display:inline-block;
+    }
+
+}

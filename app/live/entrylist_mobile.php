@@ -51,6 +51,7 @@
                     'race' => $race,
                     'club' => $club,
                     'city' => $city,
+                    'country' => $country,
                     'licence' => $licence,
                     'itra' => $itra,
                     'received_at' => (string)($r['received_at'] ?? ''),
@@ -86,6 +87,7 @@
                     <div class="mobile-meta">
                         <div><div class="k">Gender</div><div class="v"><?php echo live_h($gender ?: '—'); ?></div></div>
                         <div><div class="k">Cat</div><div class="v"><?php echo live_h($cat ?: '—'); ?></div></div>
+                        <div><div class="k">country</div><div class="v"><?php echo live_h($country); ?></div></div>
 
                         <div><div class="k">Itra</div><div class="v"><?php echo live_h($itra); ?></div></div>
                         <div><div class="k">Race</div><div class="v"><?php echo live_h($race ?: '—'); ?></div></div>

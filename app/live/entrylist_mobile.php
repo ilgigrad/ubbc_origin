@@ -25,6 +25,7 @@
                 $race = live_upper((string)($r['race'] ?? ''));
                 $club = live_title((string)($r['club'] ?? ''));
                 $city = live_title((string)($r['city'] ?? ''));
+                $country = live_upper((string)($r['country'] ?? ''));
 
                 $licence = (string)($r['licence'] ?? '');
 

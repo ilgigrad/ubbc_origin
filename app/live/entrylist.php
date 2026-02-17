@@ -276,7 +276,7 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
                         $race = live_upper((string)($r['race'] ?? ''));
                         $club = live_title((string)($r['club'] ?? ''));
                         $city = live_title((string)($r['city'] ?? ''));
-                        $country = live_title((string)($r['country'] ?? ''));
+                        $country = live_upper((string)($r['country'] ?? ''));
 
                         $licence = (string)($r['licence'] ?? '');
 

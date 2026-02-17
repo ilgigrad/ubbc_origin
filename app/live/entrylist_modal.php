@@ -47,11 +47,11 @@
 
                 <div class="grid-2">
                     <div>
-                        <strong>Availabilities (clés)</strong>
+                        <strong>Availabilities</strong>
                         <div id="m_availability_keys"></div>
                     </div>
                     <div>
-                        <strong>Participations (clés)</strong>
+                        <strong>Participations</strong>
                         <div id="m_participation_keys"></div>
                     </div>
                 </div>

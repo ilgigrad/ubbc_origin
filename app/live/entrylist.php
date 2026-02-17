@@ -241,7 +241,6 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
                     <th class="col-num">#</th>
                     <th class="col-name"><a href="<?php echo live_link('lastname', $dasc, $searchQuery, $showAll, 1); ?>">Nom</a></th>
                     <th class="col-first"><a href="<?php echo live_link('firstname', $dasc, $searchQuery, $showAll, 1); ?>">Prénom</a></th>
-                    <th class="col-first"><a href="<?php echo live_link('firstname', $dasc, $searchQuery, $showAll, 1); ?>">Prénom</a></th>
                     <th class="col-g"><a href="<?php echo live_link('gender', $dasc, $searchQuery, $showAll, 1); ?>">Gender</a></th>
                     <th class="col-cat"><a href="<?php echo live_link('cat', $dasc, $searchQuery, $showAll, 1); ?>">Cat</a></th>
                     <th class="col-country"><a href="<?php echo live_link('country', $dasc, $searchQuery, $showAll, 1); ?>">Country</a></th>

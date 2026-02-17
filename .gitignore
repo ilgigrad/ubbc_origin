@@ -43,7 +43,7 @@ app/static/.DS_Store
 # =========================
 # local / secrets / generated
 # =========================
-squash_commits.sh
+squash_*.sh
 
 # =========================
 # deps / locks

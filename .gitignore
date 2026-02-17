@@ -38,3 +38,22 @@ vendor/
 # =========================
 .DS_Store
 app/static/.DS_Store
+.idea/
+
+# =========================
+# local / secrets / generated
+# =========================
+squash_commits.sh
+
+# =========================
+# deps / locks
+# =========================
+app/composer.lock
+
+# =========================
+# local assets
+# =========================
+app/static/images/helene.png
+app/static/images/
+app/static/images/**
+

@@ -74,7 +74,7 @@ foreach ($lines as $line) {
 $email     = strtolower((string)($data['Email'] ?? '')) ?: null;
 $lastname  = strtolower((string)($data['Nom'] ?? '')) ?: null;
 $firstname = strtolower((string)($data['Prénom'] ?? $data['Prenom'] ?? '')) ?: null;
-
+$country = strtolower((string)($data['Nationalité'] ?? '')) ?: null;
 $birthdate = (string)($data['Date de naissance'] ?? '');
 $birthdate = $birthdate !== '' ? $birthdate : null;
 if ($birthdate !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $birthdate)) {
@@ -136,11 +136,11 @@ $sql = "
 INSERT INTO inscriptions
   (source_file, email, lastname, firstname, birthdate, gender, city, race,
    availability, contribution, motivation, charte, raw_text,
-   club, participations, itra, licence, cat)
+   club, participations, itra, licence, cat,country)
 VALUES
   (?, ?, ?, ?, ?, ?, ?, ?,
    ?, ?, ?, ?, ?,
-   ?, ?, ?, ?, ?)
+   ?, ?, ?, ?, ?, ?)
 ON DUPLICATE KEY UPDATE
   email=VALUES(email),
   lastname=VALUES(lastname),
@@ -148,6 +148,7 @@ ON DUPLICATE KEY UPDATE
   birthdate=VALUES(birthdate),
   gender=VALUES(gender),
   city=VALUES(city),
+  country=VALUES(country),         
   race=VALUES(race),
   availability=VALUES(availability),
   contribution=VALUES(contribution),
@@ -174,7 +175,7 @@ if (!$stmt) {
 }
 
 // 18 params exactement
-$types = "ssssssssississiiss";
+$types = "sssssssssississiiss";
 $okBind = mysqli_stmt_bind_param(
     $stmt,
     $types,
@@ -185,6 +186,7 @@ $okBind = mysqli_stmt_bind_param(
     $birthdate,
     $gender,
     $city,
+    $country,
     $race,
     $availability,
     $contribution,

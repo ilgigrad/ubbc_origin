@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-// /live/entrylist.php
+// /live/subscription.php
 require_once __DIR__ . '/../includes/db-only.php';
 require_once __DIR__ . '/../includes/helpers.php';
 
@@ -158,7 +158,7 @@ header('Content-Type: text/html; charset=utf-8');
 include(__DIR__ . '/header.php');
 
 function live_link(string $order, string $asc, string $search, string $showAll, int $page = 1): string {
-    return "/live/entrylist.php?order=" . urlencode($order)
+    return "/live/subscription.php?order=" . urlencode($order)
         . "&asc=" . urlencode($asc)
         . "&search=" . urlencode($search)
         . "&showAll=" . urlencode($showAll)
@@ -232,7 +232,7 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
         }
         ?>
 
-        <?php include(__DIR__ . '/entrylist_mobile.php'); ?>
+        <?php include(__DIR__ . '/subscription_mobile.php'); ?>
 
         <div class="live-card live-desktop">
             <table class="live-table">
@@ -371,7 +371,7 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
         <?php if ($nbpage > 1 && $showAll === 'no'): ?>
             <nav class="live-pagination" aria-label="Pagination">
                 <?php
-                $base = "/live/entrylist.php?order=" . urlencode($orderKey)
+                $base = "/live/subscription.php?order=" . urlencode($orderKey)
                     . "&asc=" . urlencode($asc)
                     . "&search=" . urlencode($searchQuery)
                     . "&showAll=" . urlencode($showAll);
@@ -404,7 +404,7 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
             </nav>
         <?php endif; ?>
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-        <?php include(__DIR__ . '/entrylist_modal.php'); ?>
+        <?php include(__DIR__ . '/subscription_modal.php'); ?>
 
     </div>
 <?php

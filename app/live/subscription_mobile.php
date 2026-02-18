@@ -1,6 +1,6 @@
 <?php
-// /live/entrylist_mobile.php
-// Attend: $rows (array), $rowNumber (int), et les fonctions live_* déclarées dans entrylist.php
+// /live/subscription_mobile.php
+// Attend: $rows (array), $rowNumber (int), et les fonctions live_* déclarées dans subscription.php
 
 ?>
 <div class="live-mobile">

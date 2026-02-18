@@ -1,5 +1,5 @@
 <?php
-// /live/entrylist_modal.php
+// /live/subscription_modal.php
 ?>
 <div class="modal fade" id="entryModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-scrollable">

@@ -131,7 +131,7 @@ if ($nbpage > 1 && $showAll === 'no') {
 
     // Icône première page
     if ($cpage > 1) {
-        echo "<li class='page-item'><a class='page-link fl-txt-prune' href='ubbc-entrylist.php?page=1&order=$order&asc=$asc&search=" . urlencode($searchQuery) . "&showAll=$showAll'><i class='fas fa-angle-double-left'></i></a></li>";
+        echo "<li class='page-item'><a class='page-link fl-txt-prune' href='ubbc-subscription.php?page=1&order=$order&asc=$asc&search=" . urlencode($searchQuery) . "&showAll=$showAll'><i class='fas fa-angle-double-left'></i></a></li>";
     } else {
         echo "<li class='page-item disabled'><span class='page-link'><i class='fas fa-angle-double-left'></i></span></li>";
     }
@@ -159,7 +159,7 @@ if ($nbpage > 1 && $showAll === 'no') {
         if ($i == $cpage) {
             echo "<li class='page-item active'><span class='page-link'>$i</span></li>";
         } else {
-            echo "<li class='page-item'><a class='page-link fl-txt-prune' href='ubbc-entrylist.php?page=$i&order=$order&asc=$asc&search=" . urlencode($searchQuery) . "&showAll=$showAll'>$i</a></li>";
+            echo "<li class='page-item'><a class='page-link fl-txt-prune' href='ubbc-subscription.php?page=$i&order=$order&asc=$asc&search=" . urlencode($searchQuery) . "&showAll=$showAll'>$i</a></li>";
         }
     }
 
@@ -170,18 +170,18 @@ if ($nbpage > 1 && $showAll === 'no') {
 
     // Icône dernière page
     if ($cpage < $nbpage) {
-        echo "<li class='page-item'><a class='page-link fl-txt-prune' href='ubbc-entrylist.php?page=$nbpage&order=$order&asc=$asc&search=" . urlencode($searchQuery) . "&showAll=$showAll'><i class='fas fa-angle-double-right'></i></a></li>";
+        echo "<li class='page-item'><a class='page-link fl-txt-prune' href='ubbc-subscription.php?page=$nbpage&order=$order&asc=$asc&search=" . urlencode($searchQuery) . "&showAll=$showAll'><i class='fas fa-angle-double-right'></i></a></li>";
     } else {
         echo "<li class='page-item disabled'><span class='page-link'><i class='fas fa-angle-double-right'></i></span></li>";
     }
 
     // Bouton "Déplier"
-    echo "<li class='page-item'><a class='page-link fl-txt-prune' href='ubbc-entrylist.php?showAll=yes&search=" . urlencode($searchQuery) . "'>Déplier</a></li>";
+    echo "<li class='page-item'><a class='page-link fl-txt-prune' href='ubbc-subscription.php?showAll=yes&search=" . urlencode($searchQuery) . "'>Déplier</a></li>";
 
     echo "</ul></nav>";
 } elseif ($showAll === 'yes') {
     echo "<nav><ul class='pagination'>";
-    echo "<li class='page-item'><a class='page-link fl-txt-prune' href='ubbc-entrylist.php?page=$cpage&order=$order&asc=$asc&search=" . urlencode($searchQuery) . "&showAll=no'>Replier</a></li>";
+    echo "<li class='page-item'><a class='page-link fl-txt-prune' href='ubbc-subscription.php?page=$cpage&order=$order&asc=$asc&search=" . urlencode($searchQuery) . "&showAll=no'>Replier</a></li>";
     echo "</ul></nav>";
 }
 ?>

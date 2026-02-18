@@ -168,7 +168,7 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
 ?>
     <div class="live-container">
 
-        <form class="live-toolbar" method="GET" action="/live/entrylist.php">
+        <form class="live-toolbar" method="GET" action="/live/subscription.php">
             <input type="text" name="search" value="<?php echo live_h($searchQuery); ?>" placeholder="nom, email, club, ville, licence, note...">
 
             <input type="hidden" name="showAll" value="<?php echo live_h($showAll); ?>">

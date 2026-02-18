@@ -38,3 +38,8 @@ tasks:
       - rm -rf ./db_data/*
       - docker compose up -d db
       - docker logs -f ubbc-mysql
+  
+  refresh:
+    desc: refresh web container after pulling branch
+    cmds :
+      - docker compose up -d --force-recreate --no-deps web	

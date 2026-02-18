@@ -134,9 +134,9 @@ $cat = category_from_birthdate($birthdate);
 // --------------------
 $sql = "
 INSERT INTO inscriptions
-  (source_file, email, lastname, firstname, birthdate, gender, city, race,
-   availability, contribution, motivation, charte, raw_text,
-   club, participations, itra, licence, cat,country)
+  (source_file, email, lastname, firstname, birthdate, gender, city, country, 
+   race,availability, contribution, motivation, charte, raw_text,
+   club, participations, itra, licence, cat)
 VALUES
   (?, ?, ?, ?, ?, ?, ?, ?,
    ?, ?, ?, ?, ?,

@@ -103,16 +103,16 @@ ON DUPLICATE KEY UPDATE
   updated_at = NOW(),
 
   /* ne pas écraser si la valeur source est NULL */
-  lastname  = COALESCE(VALUES(lastname),  lastname),
-  firstname = COALESCE(VALUES(firstname), firstname),
-  birthdate = COALESCE(VALUES(birthdate), birthdate),
-  gender    = COALESCE(VALUES(gender),    gender),
-  category    = COALESCE(VALUES(category),    category),  
-  city      = COALESCE(VALUES(city),      city),
-  club      = COALESCE(VALUES(club),      club),
-  licence   = COALESCE(VALUES(licence),   licence),
-  itra      = COALESCE(VALUES(itra),      itra),
-  country   = COALESCE(VALUES(country),   country)
+  lastname  = COALESCE(VALUES(lastname),  ubbc_users.lastname),
+  firstname = COALESCE(VALUES(firstname), ubbc_users.firstname),
+  birthdate = COALESCE(VALUES(birthdate), ubbc_users.birthdate),
+  gender    = COALESCE(VALUES(gender),    ubbc_users.gender),
+  category    = COALESCE(VALUES(category),    ubbc_users.category),  
+  city      = COALESCE(VALUES(city),      ubbc_users.city),
+  club      = COALESCE(VALUES(club),      ubbc_users.club),
+  licence   = COALESCE(VALUES(licence),   ubbc_users.licence),
+  itra      = COALESCE(VALUES(itra),      ubbc_users.itra),
+  country   = COALESCE(VALUES(country),   ubbc_users.country)
 ";
 
 // Exécute

@@ -66,8 +66,8 @@ INSERT INTO ubbc_users
 SELECT
   LOWER(TRIM(s.email)) AS email,
 
-  NULLIF(TRIM(s.lastname), '')  AS lastname,
-  NULLIF(TRIM(s.firstname), '') AS firstname,
+  NULLIF(LOWER(TRIM(s.lastname)), '')  AS lastname,
+  NULLIF(LOWER(TRIM(s.firstname)), '') AS firstname,
 
   /* birthdate: si format invalide -> NULL */
   CASE
@@ -75,8 +75,8 @@ SELECT
     ELSE NULL
   END AS birthdate,
 
-  NULLIF(TRIM(s.gender), '')  AS gender,
-  NULLIF(TRIM(s.cat), '')  AS category,
+  NULLIF(LOWER(TRIM(s.gender)), '')  AS gender,
+  NULLIF(lower(TRIM(s.cat)), '')  AS category,
   NULLIF(TRIM(s.city), '')    AS city,
   NULLIF(TRIM(s.club), '')    AS club,
   NULLIF(TRIM(s.licence), '') AS licence,

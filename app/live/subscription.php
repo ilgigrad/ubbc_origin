@@ -124,7 +124,7 @@ $selectCols = "
     i.received_at
 ";
 
-$fromSql = "FROM inscriptions i WHERE 1=1";
+$fromSql = "FROM ubbc_subscriptions i WHERE 1=1";
 
 $whereSql = $searchSql;
 

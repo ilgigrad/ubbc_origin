@@ -27,12 +27,12 @@ $all = isset($_GET['all']) ? (int)$_GET['all'] : 0;
 
 if ($id > 0) {
     $sql = "SELECT id, refused, approved, review_note, gender, participations, availability, itra
-            FROM inscriptions WHERE id = ?";
+            FROM ubbc_subscriptions WHERE id = ?";
     $stmt = mysqli_prepare($link, $sql);
     mysqli_stmt_bind_param($stmt, "i", $id);
 } elseif ($all === 1) {
     $sql = "SELECT id, refused, approved, review_note, gender, participations, availability, itra
-            FROM inscriptions ORDER BY id ASC";
+            FROM ubbc_subscriptions ORDER BY id ASC";
     $stmt = mysqli_prepare($link, $sql);
 } else {
     http_response_code(400);
@@ -45,7 +45,7 @@ $res = mysqli_stmt_get_result($stmt);
 
 $upd = mysqli_prepare(
     $link,
-    "UPDATE inscriptions SET approved = ?, review_note = ? WHERE id = ?"
+    "UPDATE ubbc_subscriptions SET approved = ?, review_note = ? WHERE id = ?"
 );
 
 $total = 0;

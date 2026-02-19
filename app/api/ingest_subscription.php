@@ -133,7 +133,7 @@ $cat = category_from_birthdate($birthdate);
 // INSERT / UPSERT
 // --------------------
 $sql = "
-INSERT INTO inscriptions
+INSERT INTO ubbc_subscriptions
   (source_file, email, lastname, firstname, birthdate, gender, city, country, 
    race,availability, contribution, motivation, charte, raw_text,
    club, participations, itra, licence, cat)
@@ -229,7 +229,7 @@ $insertId = (int)mysqli_insert_id($link);
 
 if ($insertId === 0) {
     $sfEsc = mysqli_real_escape_string($link, $sourceFile);
-    $res = mysqli_query($link, "SELECT id FROM inscriptions WHERE source_file = '{$sfEsc}' LIMIT 1");
+    $res = mysqli_query($link, "SELECT id FROM ubbc_subscriptions WHERE source_file = '{$sfEsc}' LIMIT 1");
     if ($res && ($row = mysqli_fetch_assoc($res))) {
         $insertId = (int)$row['id'];
     }
@@ -243,7 +243,7 @@ if ($insertId > 0) {
     $res = mysqli_query(
         $link,
         "SELECT id, refused, approved, review_note, gender, participations, availability, itra
-         FROM inscriptions
+         FROM ubbc_subscriptions
          WHERE id = " . $insertId . " LIMIT 1"
     );
 
@@ -252,7 +252,7 @@ if ($insertId > 0) {
         $newApproved = (int)($computed['approved'] ?? 0);
         $newNote = (string)($computed['review_note'] ?? '');
 
-        $upd = mysqli_prepare($link, "UPDATE inscriptions SET approved = ?, review_note = ? WHERE id = ?");
+        $upd = mysqli_prepare($link, "UPDATE ubbc_subscriptions SET approved = ?, review_note = ? WHERE id = ?");
         if ($upd) {
             mysqli_stmt_bind_param($upd, "isi", $newApproved, $newNote, $insertId);
             mysqli_stmt_execute($upd);

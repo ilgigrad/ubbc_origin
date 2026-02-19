@@ -96,7 +96,7 @@ FROM ubbc_subscriptions s
 WHERE s.email IS NOT NULL
   AND TRIM(s.email) <> ''
   {$sinceSql}
-ORDER BY s.submitted_at DESC
+ORDER BY s.received_at DESC
 LIMIT {$limit}
 
 ON DUPLICATE KEY UPDATE

@@ -76,6 +76,10 @@ $order = $allowedOrder[$orderKey] ?? 'i.lastname';
 $asc = (isset($_GET['asc']) && in_array($_GET['asc'], ['asc','desc'], true)) ? $_GET['asc'] : 'asc';
 $dasc = ($asc === 'asc') ? 'desc' : 'asc';
 
+$event = isset($_GET['event']) ? strtoupper(trim((string)$_GET['event'])) : 'UBBC';
+if (!in_array($event, ['UBBC','TDS'], true)) {
+    $event = 'UBBC';
+}
 // -------------------------
 // Search filter
 // -------------------------
@@ -124,8 +128,12 @@ $selectCols = "
     i.received_at
 ";
 
-$fromSql = "FROM ubbc_subscriptions i WHERE 1=1";
-
+$eventEsc = mysqli_real_escape_string($link, $event);
+$fromSql = "
+  FROM ubbc_subscriptions us
+  WHERE 1=1
+    AND i.event = '$eventEsc'
+";
 $whereSql = $searchSql;
 
 // count
@@ -157,8 +165,9 @@ $results = mysqli_query($link, $sql);
 header('Content-Type: text/html; charset=utf-8');
 include(__DIR__ . '/header.php');
 
-function live_link(string $order, string $asc, string $search, string $showAll, int $page = 1): string {
-    return "/live/subscription.php?order=" . urlencode($order)
+function live_link(string $event, string $order, string $asc, string $search, string $showAll, int $page = 1): string {
+    return "/live/subscription.php??event=" . urlencode($event)
+        . "&order=" . urlencode($order)
         . "&asc=" . urlencode($asc)
         . "&search=" . urlencode($search)
         . "&showAll=" . urlencode($showAll)
@@ -199,9 +208,9 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
             <button class="btn btn-sm btn-electric" type="submit">Rechercher</button>
 
             <?php if ($showAll === 'no'): ?>
-                <a class="btn btn-sm btn-electric" href="<?php echo live_link($orderKey, $asc, $searchQuery, 'yes', 1); ?>">Déplier</a>
+                <a class="btn btn-sm btn-electric" href="<?php echo live_link($event,$orderKey, $asc, $searchQuery, 'yes', 1); ?>">Déplier</a>
             <?php else: ?>
-                <a class="btn btn-sm btn-electric" href="<?php echo live_link($orderKey, $asc, $searchQuery, 'no', 1); ?>">Replier</a>
+                <a class="btn btn-sm btn-electric" href="<?php echo live_link($event,$orderKey, $asc, $searchQuery, 'no', 1); ?>">Replier</a>
             <?php endif; ?>
 
             <?php
@@ -212,7 +221,7 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
             ?>
 
             <a class="btn btn-sm <?php echo $btnClass; ?>"
-               href="<?php echo live_link('received_at', $nextDir, $searchQuery, $showAll, 1); ?>">
+               href="<?php echo live_link($event,'received_at', $nextDir, $searchQuery, $showAll, 1); ?>">
                 <?php echo $label; ?>
             </a>
 
@@ -239,20 +248,20 @@ function live_link(string $order, string $asc, string $search, string $showAll, 
                 <thead>
                 <tr>
                     <th class="col-num">#</th>
-                    <th class="col-name"><a href="<?php echo live_link('lastname', $dasc, $searchQuery, $showAll, 1); ?>">Nom</a></th>
-                    <th class="col-first"><a href="<?php echo live_link('firstname', $dasc, $searchQuery, $showAll, 1); ?>">Prénom</a></th>
-                    <th class="col-g"><a href="<?php echo live_link('gender', $dasc, $searchQuery, $showAll, 1); ?>">Gender</a></th>
-                    <th class="col-cat"><a href="<?php echo live_link('cat', $dasc, $searchQuery, $showAll, 1); ?>">Cat</a></th>
-                    <th class="col-country"><a href="<?php echo live_link('country', $dasc, $searchQuery, $showAll, 1); ?>">Country</a></th>
-                    <th class="col-itra"><a href="<?php echo live_link('itra', $dasc, $searchQuery, $showAll, 1); ?>">Itra</a></th>
-                    <th class="col-race"><a href="<?php echo live_link('race', $dasc, $searchQuery, $showAll, 1); ?>">Race</a></th>
-                    <th class="col-club"><a href="<?php echo live_link('club', $dasc, $searchQuery, $showAll, 1); ?>">Club</a></th>
-                    <th class="col-city"><a href="<?php echo live_link('city', $dasc, $searchQuery, $showAll, 1); ?>">City</a></th>
-                    <th class="col-lic"><a href="<?php echo live_link('licence', $dasc, $searchQuery, $showAll, 1); ?>">Licence</a></th>
-                    <th class="col-part"><a href="<?php echo live_link('participations', $dasc, $searchQuery, $showAll, 1); ?>">Participations</a></th>
+                    <th class="col-name"><a href="<?php echo live_link($event,'lastname', $dasc, $searchQuery, $showAll, 1); ?>">Nom</a></th>
+                    <th class="col-first"><a href="<?php echo live_link($event,'firstname', $dasc, $searchQuery, $showAll, 1); ?>">Prénom</a></th>
+                    <th class="col-g"><a href="<?php echo live_link($event,'gender', $dasc, $searchQuery, $showAll, 1); ?>">Gender</a></th>
+                    <th class="col-cat"><a href="<?php echo live_link($event,'cat', $dasc, $searchQuery, $showAll, 1); ?>">Cat</a></th>
+                    <th class="col-country"><a href="<?php echo live_link($event,'country', $dasc, $searchQuery, $showAll, 1); ?>">Country</a></th>
+                    <th class="col-itra"><a href="<?php echo live_link($event,'itra', $dasc, $searchQuery, $showAll, 1); ?>">Itra</a></th>
+                    <th class="col-race"><a href="<?php echo live_link($event,'race', $dasc, $searchQuery, $showAll, 1); ?>">Race</a></th>
+                    <th class="col-club"><a href="<?php echo live_link($event,'club', $dasc, $searchQuery, $showAll, 1); ?>">Club</a></th>
+                    <th class="col-city"><a href="<?php echo live_link($event,'city', $dasc, $searchQuery, $showAll, 1); ?>">City</a></th>
+                    <th class="col-lic"><a href="<?php echo live_link($event,'licence', $dasc, $searchQuery, $showAll, 1); ?>">Licence</a></th>
+                    <th class="col-part"><a href="<?php echo live_link($event,'participations', $dasc, $searchQuery, $showAll, 1); ?>">Participations</a></th>
                     <th class="col-note">review_note</th>
-                    <th class="col-av"><a href="<?php echo live_link('availability', $dasc, $searchQuery, $showAll, 1); ?>">Availability</a></th>
-                    <th class="col-status"><a href="<?php echo live_link('status', $dasc, $searchQuery, $showAll, 1); ?>">Statut</a></th>
+                    <th class="col-av"><a href="<?php echo live_link($event,'availability', $dasc, $searchQuery, $showAll, 1); ?>">Availability</a></th>
+                    <th class="col-status"><a href="<?php echo live_link($event,'status', $dasc, $searchQuery, $showAll, 1); ?>">Statut</a></th>
                 </tr>
                 </thead>
 

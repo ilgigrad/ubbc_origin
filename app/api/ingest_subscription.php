@@ -41,6 +41,15 @@ if ($sourceFile === '') {
     $sourceFile = 'sha1:' . sha1($raw);
 }
 
+// event depuis le nom de fichier
+$event = 'UBBC';
+$sfUpper = strtoupper($sourceFile);
+if (strpos($sfUpper, 'UBBC') !== false) {
+    $event = 'UBBC';
+} elseif (strpos($sfUpper, 'TDS') !== false) {
+    $event = 'TDS';
+}
+
 // --------------------
 // Parse "clé: valeur"
 // --------------------
@@ -124,7 +133,11 @@ if ($itraRaw !== null && trim((string)$itraRaw) !== '') {
 $participations = (int)ubbc_participations_count($data['Participations UBBC'] ?? null);
 
 // availability (tinyint(1) = dispo 24-31)
-$availability = (int)ubbc_available_24_31($data['Disponibilités en juillet'] ?? $data['Disponibilites en juillet'] ?? null);
+if ($event == 'UBBC') {
+    $availability = (int)ubbc_available_24_31($data['Disponibilités en juillet'] ?? $data['Disponibilites en juillet'] ?? null);
+} else {
+    $availability = 1;
+}
 
 // cat (tu dis : cat en DB, calculée ici)
 $cat = category_from_birthdate($birthdate);
@@ -134,14 +147,15 @@ $cat = category_from_birthdate($birthdate);
 // --------------------
 $sql = "
 INSERT INTO ubbc_subscriptions
-  (source_file, email, lastname, firstname, birthdate, gender, city, country, 
+  (source_file, event, email, lastname, firstname, birthdate, gender, city, country, 
    race,availability, contribution, motivation, charte, raw_text,
    club, participations, itra, licence, cat)
 VALUES
-  (?, ?, ?, ?, ?, ?, ?, ?,
+  (?, ?, ?, ?, ?, ?, ?, ?, ?,
    ?, ?, ?, ?, ?,
    ?, ?, ?, ?, ?, ?)
 ON DUPLICATE KEY UPDATE
+  event=VALUES(event),
   email=VALUES(email),
   lastname=VALUES(lastname),
   firstname=VALUES(firstname),
@@ -175,11 +189,12 @@ if (!$stmt) {
 }
 
 // 18 params exactement
-$types = "sssssssssississiiss";
+$types = "ssssssssssississiiss";
 $okBind = mysqli_stmt_bind_param(
     $stmt,
     $types,
     $sourceFile,
+    $event,
     $email,
     $lastname,
     $firstname,

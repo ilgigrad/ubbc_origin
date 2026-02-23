@@ -26,12 +26,12 @@ $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $all = isset($_GET['all']) ? (int)$_GET['all'] : 0;
 
 if ($id > 0) {
-    $sql = "SELECT id, refused, approved, review_note, gender, participations, availability, itra
+    $sql = "SELECT id, refused, approved, review_note, gender, participations, availability, itra, event
             FROM ubbc_subscriptions WHERE id = ?";
     $stmt = mysqli_prepare($link, $sql);
     mysqli_stmt_bind_param($stmt, "i", $id);
 } elseif ($all === 1) {
-    $sql = "SELECT id, refused, approved, review_note, gender, participations, availability, itra
+    $sql = "SELECT id, refused, approved, review_note, gender, participations, availability, itra, event
             FROM ubbc_subscriptions ORDER BY id ASC";
     $stmt = mysqli_prepare($link, $sql);
 } else {

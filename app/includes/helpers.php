@@ -104,7 +104,7 @@ function category_from_birthdate(?string $birthdate): string {
 function ubbc_compute_approval(array $row): array
 {
     $refused = (int)($row['refused'] ?? 0);
-
+    $event = live_upper((string)($row['event'] ?? ''));
     $gender = strtoupper(trim((string)($row['gender'] ?? '')));
     $participations = (int)($row['participations'] ?? 0);
     $availability = (int)($row['availability'] ?? 0); // pas utilisé dans tes règles actuelles, mais dispo
@@ -129,6 +129,11 @@ function ubbc_compute_approval(array $row): array
     if ($itra > 650) {
         $approved = 1;
         $tags[] = 'index';
+    }
+
+    if ($event == 'TDS') {
+        $approved = 1;
+        $tags[] = 'invitation TDS';
     }
 
     // règle hard

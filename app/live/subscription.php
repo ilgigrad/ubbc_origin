@@ -130,7 +130,7 @@ $selectCols = "
 
 $eventEsc = mysqli_real_escape_string($link, $event);
 $fromSql = "
-  FROM ubbc_subscriptions us
+  FROM ubbc_subscriptions i
   WHERE 1=1
     AND i.event = '$eventEsc'
 ";

@@ -20,7 +20,6 @@ services:
     networks:
       - ubbcnet
 
-
   db:
     image: mysql:8.0
     platform: linux/amd64
@@ -49,7 +48,7 @@ services:
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
-      PMA_ABSOLUTE_URI: https://phpmyadmin.ubbc.fr/
+      PMA_ABSOLUTE_URI: ${UBBC_PHPMYADMIN_URL}
     depends_on:
       - db
     networks:

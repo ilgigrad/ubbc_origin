@@ -7,6 +7,28 @@ declare(strict_types=1);
  * Parse un "json dans un texte" (ou texte brut), et compte les participations
  * attendu : un objet JSON {"2024":"2024","2023":"2023"} etc.
  */
+
+/** Construit une URL d'API absolue (curl-friendly) */
+function ubbc_api_url(string $path): string {
+    $base = getenv('UBBC_API_BASE');
+    $base = is_string($base) ? trim($base) : '';
+
+    if ($base !== '') {
+        $base = rtrim($base, '/');
+    } else {
+        // fallback : schéma + host réels (reverse proxy friendly)
+        $proto = $_SERVER['HTTP_X_FORWARDED_PROTO']
+            ?? ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');
+        $host = $_SERVER['HTTP_X_FORWARDED_HOST']
+            ?? ($_SERVER['HTTP_HOST'] ?? 'localhost');
+
+        $base = $proto . '://' . $host;
+    }
+
+    $path = '/' . ltrim($path, '/');
+    return $base . $path;
+}
+
 function ubbc_participations_count($raw): int
 {
     if ($raw === null) return 0;

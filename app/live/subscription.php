@@ -66,6 +66,7 @@ $allowedOrder = [
     'participations' => 'i.participations',
     'availability'   => 'i.availability',
     'received_at'    => 'i.received_at',
+    'event'    => 'i.event',
     // statut = tri combiné refused/approved/pending
     'status'         => "CASE WHEN i.refused=1 THEN 2 WHEN i.approved=1 THEN 1 ELSE 0 END",
 ];
@@ -95,7 +96,8 @@ if ($searchQuery !== '') {
         i.race LIKE '%$q%' OR
         i.licence LIKE '%$q%' OR
         i.review_note LIKE '%$q%' OR
-        i.country LIKE '%$q%' 
+        i.country LIKE '%$q%' OR
+        i.event LIKE '%$q%' 
     )";
 }
 

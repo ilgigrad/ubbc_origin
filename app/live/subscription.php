@@ -383,7 +383,8 @@ function live_link(string $event, string $order, string $asc, string $search, st
         <?php if ($nbpage > 1 && $showAll === 'no'): ?>
             <nav class="live-pagination" aria-label="Pagination">
                 <?php
-                $base = "/live/subscription.php?order=" . urlencode($orderKey)
+                $base = "/live/subscription.php?event=" . urlencode($event)
+                    . "&order=" . urlencode($order)
                     . "&asc=" . urlencode($asc)
                     . "&search=" . urlencode($searchQuery)
                     . "&showAll=" . urlencode($showAll);

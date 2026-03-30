@@ -1,85 +1,46 @@
-version: "3"
+version: '3'
 
 vars:
-  CADDY: ubbc-caddy-local
-  CERT_DIR: ./certs
-  ROOT_CRT: "{{.CERT_DIR}}/caddy-local-root.crt"
-  INTER_CRT: "{{.CERT_DIR}}/caddy-local-intermediate.crt"
-
-  # containers qui doivent faire confiance au HTTPS local (curl, scripts, etc.)
-  TRUST_TARGETS: "ubbc-web ubbc-grav ubbc-phpmyadmin"
+  VHOST_PATH: ./web
 
 tasks:
-  up:
-    desc: "Start Caddy local"
+  start:
+    desc: Build les conteneurs web et db
     cmds:
-      - docker compose up -d --force-recreate
+      - docker compose up --build -d web db
 
-  down:
-    desc: "Stop Caddy local"
+  stop:
+    desc: Arrête et supprime les conteneurs + volumes
+    cmds:
+      - docker compose down -v
+      - sudo rm -rf ./db_data
+      - docker builder prune -f
+
+  restart:
+    cmds:
+      - docker compose restart web
+
+  rebuild-all:
+    desc: Rebuild complet avec certbot
+    cmds:
+      - task: stop
+      - task: start
+
+  composer-install:
+    dir: ./app
+    cmds:
+      - composer install
+
+  load-db:
+    desc: Recharge la base MySQL depuis db_dump (DESTRUCTIF)
     cmds:
       - docker compose down
+      - rm -rf ./db_data/*
+      - docker compose up -d db
+      - docker logs -f ubbc-mysql
+  
+  refresh:
+    desc: refresh web container after pulling branch
+    cmds :
+      - docker compose up -d --force-recreate --no-deps web	
 
-  reload:
-    desc: "Reload Caddy config"
-    cmds:
-      - docker exec -w /etc/caddy {{.CADDY}} caddy reload --config /etc/caddy/Caddyfile
-
-  logs:
-    desc: "Caddy logs"
-    cmds:
-      - docker logs --tail=200 {{.CADDY}}
-
-  cert:pull:
-    desc: "Pull root + intermediate certs from Caddy into ./certs"
-    cmds:
-      - mkdir -p "{{.CERT_DIR}}"
-      - docker cp {{.CADDY}}:/data/caddy/pki/authorities/local/root.crt "{{.ROOT_CRT}}"
-      - docker cp {{.CADDY}}:/data/caddy/pki/authorities/local/intermediate.crt "{{.INTER_CRT}}"
-
-  cert:trust-mac:
-    desc: "Trust Caddy local root CA in macOS System keychain (sudo)"
-    cmds:
-      - task: cert:pull
-      - |
-        sudo security add-trusted-cert -d -r trustRoot \
-          -k /Library/Keychains/System.keychain \
-          "{{.ROOT_CRT}}"
-
-  cert:push-one:
-    desc: "Push certs into one container and refresh CA store (usage: task cert:push-one -- ubbc-web)"
-    cmds:
-      - |
-        test -n "{{.CLI_ARGS}}" || (echo "Donne un container: task cert:push-one -- ubbc-web" && exit 1)
-      - task: cert:pull
-      - |
-        TARGET="{{.CLI_ARGS}}"
-        docker exec {{.CADDY}} sh -lc 'cat /data/caddy/pki/authorities/local/root.crt' \
-          | docker exec -i "$TARGET" sh -lc 'cat > /usr/local/share/ca-certificates/caddy-local-root.crt'
-        docker exec {{.CADDY}} sh -lc 'cat /data/caddy/pki/authorities/local/intermediate.crt' \
-          | docker exec -i "$TARGET" sh -lc 'cat > /usr/local/share/ca-certificates/caddy-local-intermediate.crt'
-        docker exec -i "$TARGET" sh -lc 'update-ca-certificates --fresh || update-ca-certificates'
-
-  cert:push:
-    desc: "Push certs into all TRUST_TARGETS and refresh CA store"
-    cmds:
-      - task: cert:pull
-      - |
-        for c in {{.TRUST_TARGETS}}; do
-          echo "==> install CA in $c"
-          docker exec {{.CADDY}} sh -lc 'cat /data/caddy/pki/authorities/local/root.crt' \
-            | docker exec -i "$c" sh -lc 'cat > /usr/local/share/ca-certificates/caddy-local-root.crt'
-          docker exec {{.CADDY}} sh -lc 'cat /data/caddy/pki/authorities/local/intermediate.crt' \
-            | docker exec -i "$c" sh -lc 'cat > /usr/local/share/ca-certificates/caddy-local-intermediate.crt'
-          docker exec -i "$c" sh -lc 'update-ca-certificates --fresh || update-ca-certificates'
-        done
-
-  cert:check:
-    desc: "Check from a container that TLS validates (usage: task cert:check -- ubbc-web)"
-    cmds:
-      - |
-        test -n "{{.CLI_ARGS}}" || (echo "Donne un container: task cert:check -- ubbc-web" && exit 1)
-      - |
-        TARGET="{{.CLI_ARGS}}"
-        docker exec -it "$TARGET" sh -lc \
-          'curl -Iv https://live.ubbc.local/ --max-time 5 | sed -n "1,60p"'

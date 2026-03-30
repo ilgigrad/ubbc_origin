@@ -66,7 +66,7 @@ $allowedOrder = [
     'participations' => 'i.participations',
     'availability'   => 'i.availability',
     'received_at'    => 'i.received_at',
-    'event'    => 'i.event',
+    'event'          => 'i.event',
     // statut = tri combiné refused/approved/pending
     'status'         => "CASE WHEN i.refused=1 THEN 2 WHEN i.approved=1 THEN 1 ELSE 0 END",
 ];
@@ -169,7 +169,7 @@ header('Content-Type: text/html; charset=utf-8');
 include(__DIR__ . '/header.php');
 
 function live_link(string $event, string $order, string $asc, string $search, string $showAll, int $page = 1): string {
-    return "/live/subscription.php??event=" . urlencode($event)
+    return "/live/subscription.php?event=" . urlencode($event)
         . "&order=" . urlencode($order)
         . "&asc=" . urlencode($asc)
         . "&search=" . urlencode($search)

@@ -42,12 +42,12 @@ if ($sourceFile === '') {
 }
 
 // event depuis le nom de fichier
-$event = 'UBBC';
+$event = 'ubbc';
 $sfUpper = strtoupper($sourceFile);
 if (strpos($sfUpper, 'UBBC') !== false) {
-    $event = 'UBBC';
+    $event = 'ubbc';
 } elseif (strpos($sfUpper, 'TDS') !== false) {
-    $event = 'TDS';
+    $event = 'tds';
 }
 
 // --------------------
@@ -96,6 +96,9 @@ $gender = $gender !== '' ? $gender : null;
 $city = strtolower((string)($data['Ville'] ?? '')) ?: null;
 $race = (string)($data['Course'] ?? '');
 $race = $race !== '' ? $race : null;
+if ($event == 'tds') {
+    $race = 'tds';
+}
 
 $club = strtolower((string)($data['Club'] ?? '')) ?: null;
 
@@ -133,7 +136,7 @@ if ($itraRaw !== null && trim((string)$itraRaw) !== '') {
 $participations = (int)ubbc_participations_count($data['Participations UBBC'] ?? null);
 
 // availability (tinyint(1) = dispo 24-31)
-if ($event == 'UBBC') {
+if ($event == 'ubbc') {
     $availability = (int)ubbc_available_24_31($data['Disponibilités en juillet'] ?? $data['Disponibilites en juillet'] ?? null);
 } else {
     $availability = 1;

@@ -77,9 +77,9 @@ $order = $allowedOrder[$orderKey] ?? 'i.lastname';
 $asc = (isset($_GET['asc']) && in_array($_GET['asc'], ['asc','desc'], true)) ? $_GET['asc'] : 'asc';
 $dasc = ($asc === 'asc') ? 'desc' : 'asc';
 
-$event = isset($_GET['event']) ? strtoupper(trim((string)$_GET['event'])) : 'UBBC';
-if (!in_array($event, ['UBBC','TDS'], true)) {
-    $event = 'UBBC';
+$event = isset($_GET['event']) ? strtolower(trim((string)$_GET['event'])) : 'ubbc';
+if (!in_array($event, ['ubbc','tds'], true)) {
+    $event = 'ubbc';
 }
 // -------------------------
 // Search filter
@@ -127,7 +127,8 @@ $selectCols = "
     i.contribution,
     i.motivation,
     i.raw_text,
-    i.received_at
+    i.received_at,
+    i.event
 ";
 
 $eventEsc = mysqli_real_escape_string($link, $event);

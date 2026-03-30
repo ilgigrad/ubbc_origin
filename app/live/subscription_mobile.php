@@ -21,7 +21,7 @@
 
                 $itraVal = $r['itra'];
                 $itra = ($itraVal === null || (int)$itraVal === 0) ? '—' : (string)(int)$itraVal;
-
+                $event = live_upper((string)($r['event'] ?? ''));
                 $race = live_upper((string)($r['race'] ?? ''));
                 $club = live_title((string)($r['club'] ?? ''));
                 $city = live_title((string)($r['city'] ?? ''));
@@ -49,6 +49,7 @@
                     'name' => trim($firstname . ' ' . $lastname),
                     'email' => (string)($r['email'] ?? ''),
                     'birthdate' => (string)($r['birthdate'] ?? ''),
+                    'event' => $event,
                     'race' => $race,
                     'club' => $club,
                     'city' => $city,

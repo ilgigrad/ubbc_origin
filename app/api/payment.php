@@ -98,9 +98,9 @@ foreach (($session['custom_fields'] ?? []) as $field) {
         ?? $field['numeric']['value']
         ?? ''
     ));
-    if ($key === 'modletshirt') {
+    if ($key === 'maillot') {
         $shirtModel = $value;
-    } elseif ($key === 'tailledutshirt') {
+    } elseif ($key === 'taille') {
         $shirtSize = $value;
     }
 }

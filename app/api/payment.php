@@ -71,15 +71,16 @@ if (($session['payment_status'] ?? '') !== 'paid') {
 }
 
 // -------------------------
-// Email de correspondance via client_reference_id
+// Email de correspondance
 // -------------------------
-// Passer l'email dans le lien de paiement :
-// https://book.stripe.com/xxx?client_reference_id=EMAIL_DU_PARTICIPANT
-$email = trim((string)($session['client_reference_id'] ?? ''));
+// customer_details.email : email saisi par le client lors du paiement Stripe.
+// Note : client_reference_id inutilisable car le @ des emails n'est pas
+// encodé par Mailjet et casse le paramètre URL côté Stripe.
+$email = trim((string)($session['customer_details']['email'] ?? ''));
 
 if ($email === '') {
     http_response_code(422);
-    echo json_encode(['ok' => false, 'error' => 'no_client_reference_id']);
+    echo json_encode(['ok' => false, 'error' => 'no_email']);
     exit;
 }
 
@@ -97,9 +98,9 @@ foreach (($session['custom_fields'] ?? []) as $field) {
         ?? $field['numeric']['value']
         ?? ''
     ));
-    if ($key === 'shirt_model' || $key === 'modele_t_shirt') {
+    if ($key === 't-shirt') {
         $shirtModel = $value;
-    } elseif ($key === 'shirt_size' || $key === 'taille_t_shirt') {
+    } elseif ($key === 'size') {
         $shirtSize = $value;
     }
 }

@@ -11,6 +11,7 @@ services:
       UBBC_DB_USER: ${UBBC_DB_USER}
       UBBC_DB_PASS: ${UBBC_DB_PASS}
       UBBC_INGEST_TOKEN: ${UBBC_INGEST_TOKEN}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET}
     volumes:
       - ./app:/var/www/html
       - ./app/vendor:/var/www/html/vendor

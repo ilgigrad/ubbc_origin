@@ -69,6 +69,9 @@ $allowedOrder = [
     'event'          => 'i.event',
     // statut = tri combiné refused/approved/pending
     'status'         => "CASE WHEN i.refused=1 THEN 2 WHEN i.approved=1 THEN 1 ELSE 0 END",
+    'payment_at'     => 'i.payment_at',
+    'shirt_size'     => 'i.shirt_size',
+    'shirt_model'    => 'i.shirt_model',
 ];
 
 $orderKey = $_GET['order'] ?? 'lastname';
@@ -128,7 +131,10 @@ $selectCols = "
     i.motivation,
     i.raw_text,
     i.received_at,
-    i.event
+    i.event,
+    i.payment_at,
+    i.shirt_size,
+    i.shirt_model
 ";
 
 $eventEsc = mysqli_real_escape_string($link, $event);
@@ -201,6 +207,9 @@ function live_link(string $event, string $order, string $asc, string $search, st
                     <option value="participations" <?= $orderKey==='participations'?'selected':'' ?>>Participations</option>
                     <option value="availability" <?= $orderKey==='availability'?'selected':'' ?>>Disponibilité</option>
                     <option value="approved" <?= $orderKey==='approved'?'selected':'' ?>>Statut</option>
+                    <option value="payment_at" <?= $orderKey==='payment_at'?'selected':'' ?>>Paiement</option>
+                    <option value="shirt_size" <?= $orderKey==='shirt_size'?'selected':'' ?>>Taille t-shirt</option>
+                    <option value="shirt_model" <?= $orderKey==='shirt_model'?'selected':'' ?>>Modèle t-shirt</option>
                 </select>
             </div>
             <select name="asc" class="mobile-sort" onchange="this.form.submit()">
@@ -265,12 +274,15 @@ function live_link(string $event, string $order, string $asc, string $search, st
                     <th class="col-note">review_note</th>
                     <th class="col-av"><a href="<?php echo live_link($event,'availability', $dasc, $searchQuery, $showAll, 1); ?>">Availability</a></th>
                     <th class="col-status"><a href="<?php echo live_link($event,'status', $dasc, $searchQuery, $showAll, 1); ?>">Statut</a></th>
+                    <th class="col-payment"><a href="<?php echo live_link($event,'payment_at', $dasc, $searchQuery, $showAll, 1); ?>">Paiement</a></th>
+                    <th class="col-shirt-size"><a href="<?php echo live_link($event,'shirt_size', $dasc, $searchQuery, $showAll, 1); ?>">Taille</a></th>
+                    <th class="col-shirt-model"><a href="<?php echo live_link($event,'shirt_model', $dasc, $searchQuery, $showAll, 1); ?>">T-shirt</a></th>
                 </tr>
                 </thead>
 
                 <tbody>
                 <?php if (count($rows) === 0): ?>
-                    <tr><td colspan="14" class="empty">Pas d'inscription</td></tr>
+                    <tr><td colspan="17" class="empty">Pas d'inscription</td></tr>
                 <?php else: ?>
                     <?php foreach ($rows as $r): ?>
                         <?php
@@ -373,6 +385,15 @@ function live_link(string $event, string $order, string $asc, string $search, st
                             <td class="col-status">
                                 <?php echo live_status_dot($status); ?>
                             </td>
+
+                            <td class="col-payment">
+                                <?php echo !empty($r['payment_at'])
+                                    ? '<span class="dot dot-green" title="payé" aria-label="payé"></span>'
+                                    : '<span class="dot dot-red" title="non payé" aria-label="non payé"></span>'; ?>
+                            </td>
+
+                            <td class="col-shirt-size"><?php echo live_h((string)($r['shirt_size'] ?? '') ?: '—'); ?></td>
+                            <td class="col-shirt-model"><?php echo live_h((string)($r['shirt_model'] ?? '') ?: '—'); ?></td>
                         </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>

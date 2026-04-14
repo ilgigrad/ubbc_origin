@@ -33,6 +33,9 @@
                 $participations = ($participationsVal <= 0) ? '—' : (string)$participationsVal;
 
                 $availability = (int)($r['availability'] ?? 0);
+                $paymentAt    = (string)($r['payment_at'] ?? '');
+                $shirtSize    = (string)($r['shirt_size'] ?? '');
+                $shirtModel   = (string)($r['shirt_model'] ?? '');
                 $review_note  = (string)($r['review_note'] ?? '');
 
                 $rawText = (string)($r['raw_text'] ?? '');
@@ -82,6 +85,9 @@
                                 <?php echo ($availability === 1)
                                     ? '<span class="dot dot-green" title="dispo 24–31" aria-label="dispo 24–31"></span>'
                                     : '<span class="dot dot-red" title="pas dispo 24–31" aria-label="pas dispo 24–31"></span>'; ?>
+                                <?php echo !empty($paymentAt)
+                                    ? '<span class="dot dot-green" title="payé" aria-label="payé"></span>'
+                                    : '<span class="dot dot-red" title="non payé" aria-label="non payé"></span>'; ?>
                             </div>
                         </div>
                     </div>
@@ -99,6 +105,8 @@
 
                         <div><div class="k">Licence</div><div class="v"><?php echo live_h($licence ?: '—'); ?></div></div>
                         <div><div class="k">Participations</div><div class="v"><?php echo live_h($participations); ?></div></div>
+                        <div><div class="k">Taille</div><div class="v"><?php echo live_h($shirtSize ?: '—'); ?></div></div>
+                        <div><div class="k">T-shirt</div><div class="v"><?php echo live_h($shirtModel ?: '—'); ?></div></div>
                     </div>
                 </div>
             <?php endforeach; ?>

@@ -131,7 +131,7 @@ if ($shirtSize !== null) {
 }
 
 $setClause = implode(', ', $setParts);
-$sql = "UPDATE ubbc_subscriptions SET $setClause WHERE email = '$emailEsc'";
+$sql = "UPDATE ubbc_subscriptions SET $setClause WHERE email = '$emailEsc' AND event = 'tds'";
 
 $ok = mysqli_query($link, $sql);
 if (!$ok) {

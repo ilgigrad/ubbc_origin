@@ -66,6 +66,7 @@ while ($row = mysqli_fetch_assoc($res)) {
         mysqli_stmt_bind_param($upd, "isi", $newApproved, $newNote, $row['id']);
         mysqli_stmt_execute($upd);
         $updated++;
+        ubbc_push_subscription((int)$row['id'], $link);
     }
 }
 

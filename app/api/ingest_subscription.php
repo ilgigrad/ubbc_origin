@@ -280,6 +280,10 @@ if ($insertId > 0) {
     if ($res) mysqli_free_result($res);
 }
 
+if ($insertId > 0) {
+    ubbc_push_subscription($insertId, $link);
+}
+
 mysqli_close($link);
 
 http_response_code(200);

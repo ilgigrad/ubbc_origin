@@ -202,3 +202,70 @@ function live_row_class(array $r): string {
     if ($s === 'approved') return 'row-approved';
     return 'row-pending';
 }
+
+/**
+ * Pousse l'état courant d'une inscription vers l'API externe.
+ * Fire-and-forget : les erreurs réseau ne remontent pas.
+ */
+function ubbc_push_subscription(int $id, $link): void
+{
+    $apiUrl = getenv('UBBC_API_URL') ?: '';
+    $token  = getenv('UBBC_INGEST_TOKEN') ?: '';
+    if ($apiUrl === '' || $token === '') {
+        return;
+    }
+
+    $res = mysqli_query(
+        $link,
+        "SELECT event, race, email, firstname, lastname, birthdate, gender, cat, country,
+                city, club, itra, licence, participations, availability, charte,
+                motivation, contribution, payment_at, shirt_model, shirt_size
+         FROM ubbc_subscriptions WHERE id = " . $id . " LIMIT 1"
+    );
+    if (!$res || !($row = mysqli_fetch_assoc($res))) {
+        return;
+    }
+
+    $payload = [
+        'event'          => $row['event'],
+        'race'           => $row['race'],
+        'email'          => $row['email'],
+        'firstname'      => $row['firstname'],
+        'lastname'       => $row['lastname'],
+        'birthdate'      => $row['birthdate'],
+        'gender'         => $row['gender'],
+        'cat'            => $row['cat'],
+        'country'        => $row['country'],
+        'city'           => $row['city'],
+        'club'           => $row['club'],
+        'itra'           => $row['itra'] !== null ? (int)$row['itra'] : null,
+        'licence'        => $row['licence'],
+        'participations' => (int)$row['participations'],
+        'availability'   => (bool)$row['availability'],
+        'charte'         => (bool)$row['charte'],
+        'motivation'     => $row['motivation'],
+        'contribution'   => $row['contribution'],
+        'paid_at'        => $row['payment_at'],
+        'shirt_model'    => $row['shirt_model'],
+        'shirt_size'     => $row['shirt_size'],
+    ];
+
+    $url = rtrim($apiUrl, '/') . '/api/subscriptions/push';
+    if (!preg_match('#^https?://#', $url)) {
+        $url = 'http://' . $url;
+    }
+
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => json_encode($payload, JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/json',
+            'X-UBBC-TOKEN: ' . $token,
+        ],
+        CURLOPT_TIMEOUT        => 5,
+    ]);
+    curl_exec($ch);
+    curl_close($ch);
+}

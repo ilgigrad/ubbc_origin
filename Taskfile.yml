@@ -44,3 +44,7 @@ tasks:
     cmds :
       - docker compose up -d --force-recreate --no-deps web	
 
+  phpmyadmin:
+    desc: start or restart phpmyadmin
+    cmds :
+      - docker restart ubbc-phpmyadmin

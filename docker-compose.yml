@@ -1,5 +1,9 @@
+# Ancien site PHP et sa base MySQL : arrêtés en production le 5 octobre 2026, données reprises
+# dans ubbc.api (sauvegarde : ~/backups/mysql-db15800_ubbc-*.sql.gz). Poste local uniquement :
+#   docker compose --profile local up -d
 services:
   web:
+    profiles: ["local"]
     container_name: ubbc-web
     build:
       dockerfile: Dockerfile
@@ -22,6 +26,7 @@ services:
       - ubbcnet
 
   db:
+    profiles: ["local"]
     image: mysql:8.0
     platform: linux/amd64
     container_name: ubbc-mysql

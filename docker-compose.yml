@@ -42,7 +42,11 @@ services:
     networks:
       - ubbcnet
 
+  # Outil local, jamais démarré en production :
+  #   docker compose --profile local up -d phpmyadmin
+  # En production, accéder à MySQL par un tunnel SSH
   phpmyadmin:
+    profiles: ["local"]
     image: phpmyadmin:latest
     container_name: ubbc-phpmyadmin
     restart: unless-stopped
